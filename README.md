@@ -166,7 +166,7 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 Marcelo Luiz
 
 - GitHub: [@mlluiz39](https://github.com/mlluiz39)
-- LinkedIn: [Seu Nome](https://linkedin.com/in/marcelo-luiz-pereira-souza)
+- LinkedIn: [Marcelo Luiz](https://linkedin.com/in/marcelo-luiz-pereira-souza)
 
 ---
 
