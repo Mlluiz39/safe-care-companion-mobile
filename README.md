@@ -163,10 +163,10 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 
 ## 👤 Autor
 
-Seu Nome
+Marcelo Luiz
 
-- GitHub: [@seu-usuario](https://github.com/seu-usuario)
-- LinkedIn: [Seu Nome](https://linkedin.com/in/seu-perfil)
+- GitHub: [@mlluiz39](https://github.com/mlluiz39)
+- LinkedIn: [Seu Nome](https://linkedin.com/in/marcelo-luiz-pereira-souza)
 
 ---
 
