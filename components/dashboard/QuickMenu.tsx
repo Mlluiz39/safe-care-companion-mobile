@@ -29,7 +29,7 @@ const menuItems = [
     icon: Users,
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
-    href: "/profile", // Placeholder
+    href: "/family",
   },
 ];
 

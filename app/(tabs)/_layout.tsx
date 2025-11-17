@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, Pill, Calendar, FileText, User } from "lucide-react-native";
+import { Home, Pill, Calendar, FileText, User, Users } from "lucide-react-native";
 import { Platform } from "react-native";
 
 export default function TabLayout() {
@@ -49,6 +49,13 @@ export default function TabLayout() {
         options={{
           title: "Exames",
           tabBarIcon: ({ color }) => <FileText size={26} color={color} />,
+        }}
+      />
+       <Tabs.Screen
+        name="family"
+        options={{
+          title: "Familiares",
+          tabBarIcon: ({ color }) => <Users size={26} color={color} />,
         }}
       />
       <Tabs.Screen
