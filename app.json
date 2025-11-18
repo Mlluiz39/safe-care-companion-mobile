@@ -39,8 +39,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
+        "projectId": "9c929fe0-2aba-400a-93af-f1b1d2df68a4"
       }
-    }
+    },
+    "owner": "mlluiz39"
   }
 }
