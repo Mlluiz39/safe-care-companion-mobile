@@ -1,30 +1,64 @@
-import { View, Text } from 'react-native';
-import { Pill } from 'lucide-react-native';
-import Card from '../ui/Card';
-import { Medication } from '../../types';
+import { View, Text, StyleSheet } from 'react-native'
+import { Pill } from 'lucide-react-native'
+import Card from '../ui/Card'
+import { Medication } from '../../types'
+import {
+  colors,
+  colorsWithOpacity,
+  fontSize,
+  fontWeight,
+  borderRadius,
+  spacing,
+} from '../../constants/colors'
 
 type MedicationListItemProps = {
-  medication: Medication;
-};
+  medication: Medication
+}
 
-export default function MedicationListItem({ medication }: MedicationListItemProps) {
+export default function MedicationListItem({
+  medication,
+}: MedicationListItemProps) {
   return (
-    <Card className="p-4 flex-row items-center">
-      <View className="bg-primary/10 p-3 rounded-full mr-4">
-        <Pill size={24} className="text-primary" />
+    <Card style={styles.card}>
+      <View style={styles.iconContainer}>
+        <Pill size={24} color={colors.primary.DEFAULT} />
       </View>
-      <View className="flex-1">
-        <Text className="text-base font-bold text-foreground" numberOfLines={1}>
+      <View style={styles.content}>
+        <Text style={styles.name} numberOfLines={1}>
           {medication.name}
         </Text>
-        <Text className="text-sm text-muted-foreground">{medication.dosage}</Text>
-        <Text className="text-sm text-muted-foreground">
-          Horário: {medication.time}
-        </Text>
-        <Text className="text-sm text-muted-foreground">
-          Paciente: {medication.patient}
-        </Text>
+        <Text style={styles.info}>{medication.dosage}</Text>
+        <Text style={styles.info}>Frequência: {medication.frequency}</Text>
+        {medication.patient && (
+          <Text style={styles.info}>Paciente: {medication.patient.name}</Text>
+        )}
       </View>
     </Card>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  card: {
+    padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    backgroundColor: colorsWithOpacity['primary/10'],
+    padding: 12,
+    borderRadius: borderRadius.full,
+    marginRight: spacing.md,
+  },
+  content: {
+    flex: 1,
+  },
+  name: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+    color: colors.foreground,
+  },
+  info: {
+    fontSize: fontSize.sm,
+    color: colors.muted.foreground,
+  },
+})

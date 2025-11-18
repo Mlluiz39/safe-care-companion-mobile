@@ -1,52 +1,150 @@
-import { SectionList, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import ScreenHeader from "../../components/ui/ScreenHeader";
-import { faker } from "@faker-js/faker";
-import { Appointment } from "../../types";
-import AppointmentListItem from "../../components/appointments/AppointmentListItem";
-import { add, sub } from 'date-fns';
-
-// Gerar dados fictícios
-const createRandomAppointment = (dateFn: (date: Date) => Date): Appointment => ({
-  id: faker.string.uuid(),
-  specialty: faker.lorem.word(),
-  doctor: `Dr(a). ${faker.person.firstName()} ${faker.person.lastName()}`,
-  date: dateFn(new Date()),
-  location: `${faker.location.streetAddress()}, ${faker.location.city()}`,
-  patient: faker.person.firstName(),
-});
-
-const upcomingAppointments = faker.helpers.multiple(() => createRandomAppointment((d) => add(d, { days: faker.number.int({ min: 1, max: 30 })})), { count: 3 });
-const pastAppointments = faker.helpers.multiple(() => createRandomAppointment((d) => sub(d, { days: faker.number.int({ min: 1, max: 30 })})), { count: 5 });
-
-const APPOINTMENT_SECTIONS = [
-    { title: 'Próximas Consultas', data: upcomingAppointments.sort((a, b) => a.date.getTime() - b.date.getTime()) },
-    { title: 'Consultas Anteriores', data: pastAppointments.sort((a, b) => b.date.getTime() - a.date.getTime()) },
-];
-
+import {
+  SectionList,
+  Text,
+  View,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import ScreenHeader from '../../components/ui/ScreenHeader'
+import { Appointment } from '../../types'
+import AppointmentListItem from '../../components/appointments/AppointmentListItem'
+import { colors, fontSize, fontWeight, spacing } from '../../constants/colors'
+import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../lib/auth'
+import { useEffect, useState } from 'react'
 
 export default function AppointmentsScreen() {
+  const { user } = useAuth()
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      if (!user) return
+
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*, patient:patients(*)')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false })
+
+      if (error) {
+        console.error('Erro ao buscar consultas:', error)
+        alert('Não foi possível carregar as consultas.')
+      } else {
+        setAppointments(data || [])
+      }
+      setLoading(false)
+    }
+
+    fetchAppointments()
+  }, [user])
+
+  const now = new Date()
+  const upcoming = appointments
+    .filter(apt => new Date(apt.date) >= now && apt.status === 'scheduled')
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  const past = appointments
+    .filter(apt => new Date(apt.date) < now || apt.status !== 'scheduled')
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+  const APPOINTMENT_SECTIONS = [
+    {
+      title: 'Próximas Consultas',
+      data: upcoming,
+    },
+    {
+      title: 'Consultas Anteriores',
+      data: past,
+    },
+  ]
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScreenHeader
+          title="Minhas Consultas"
+          buttonLabel="Agendar"
+          onButtonPress={() => alert('Agendar nova consulta')}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
+        </View>
+      </SafeAreaView>
+    )
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView style={styles.container}>
       <ScreenHeader
         title="Minhas Consultas"
         buttonLabel="Agendar"
-        onButtonPress={() => alert("Agendar nova consulta")}
+        onButtonPress={() => alert('Agendar nova consulta')}
       />
       <SectionList
         sections={APPOINTMENT_SECTIONS}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <View className="px-6"><AppointmentListItem appointment={item} /></View>}
-        renderSectionHeader={({ section: { title } }) => (
-          <Text className="text-lg font-bold text-foreground mb-3 px-6">{title}</Text>
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.itemWrapper}>
+            <AppointmentListItem appointment={item} />
+          </View>
         )}
-        contentContainerStyle={{ paddingBottom: 24 }}
-        ListHeaderComponent={<View className="h-2"/>}
+        renderSectionHeader={({ section: { title } }) => (
+          <Text style={styles.sectionHeader}>{title}</Text>
+        )}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={<View style={styles.listHeader} />}
         stickySectionHeadersEnabled={false}
-        ItemSeparatorComponent={() => <View className="h-4" />}
-        SectionSeparatorComponent={() => <View className="h-6" />}
-        renderSectionFooter={({section}) => section.data.length === 0 ? <Text className="text-muted-foreground text-center px-6 pb-4">Nenhuma consulta encontrada.</Text> : null}
+        ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+        SectionSeparatorComponent={() => <View style={styles.sectionSeparator} />}
+        renderSectionFooter={({ section }) =>
+          section.data.length === 0 ? (
+            <Text style={styles.emptyText}>Nenhuma consulta encontrada.</Text>
+          ) : null
+        }
       />
     </SafeAreaView>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  itemWrapper: {
+    paddingHorizontal: spacing.lg,
+  },
+  sectionHeader: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.foreground,
+    marginBottom: 12,
+    paddingHorizontal: spacing.lg,
+  },
+  listContent: {
+    paddingBottom: spacing.lg,
+  },
+  listHeader: {
+    height: 8,
+  },
+  itemSeparator: {
+    height: spacing.md,
+  },
+  sectionSeparator: {
+    height: spacing.lg,
+  },
+  emptyText: {
+    color: colors.muted.foreground,
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+})

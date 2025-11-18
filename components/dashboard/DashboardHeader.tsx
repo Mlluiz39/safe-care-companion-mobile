@@ -1,19 +1,47 @@
-import { View, Text, Image } from "react-native";
+import { View, Text, Image, StyleSheet } from 'react-native'
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  borderRadius,
+} from '../../constants/colors'
 
 export default function DashboardHeader() {
   // Mock data, substituir com dados do usuário
-  const userName = "Maria";
+  const userName = 'Maria de Fatima'
 
   return (
-    <View className="flex-row justify-between items-center">
+    <View style={styles.container}>
       <View>
-        <Text className="text-2xl font-bold text-foreground">Olá, {userName}!</Text>
-        <Text className="text-base text-muted-foreground">Cuide da sua família</Text>
+        <Text style={styles.greeting}>Olá, {userName} !</Text>
+        <Text style={styles.subtitle}>Cuide da sua família</Text>
       </View>
       <Image
         source={{ uri: `https://i.pravatar.cc/150?u=${userName}` }}
-        className="w-14 h-14 rounded-full"
+        style={styles.avatar}
       />
     </View>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  greeting: {
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.bold,
+    color: colors.foreground,
+  },
+  subtitle: {
+    fontSize: fontSize.base,
+    color: colors.muted.foreground,
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.full,
+  },
+})

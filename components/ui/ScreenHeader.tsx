@@ -1,11 +1,12 @@
-import { View, Text } from "react-native";
-import Button from "./Button";
+import { View, Text, StyleSheet } from 'react-native'
+import Button from './Button'
+import { colors, fontSize, fontWeight, spacing } from '../../constants/colors'
 
 type ScreenHeaderProps = {
-  title: string;
-  buttonLabel?: string;
-  onButtonPress?: () => void;
-};
+  title: string
+  buttonLabel?: string
+  onButtonPress?: () => void
+}
 
 export default function ScreenHeader({
   title,
@@ -13,11 +14,28 @@ export default function ScreenHeader({
   onButtonPress,
 }: ScreenHeaderProps) {
   return (
-    <View className="flex-row justify-between items-center px-6 pt-4 pb-4 bg-background">
-      <Text className="text-2xl font-bold text-foreground">{title}</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>{title}</Text>
       {buttonLabel && (
         <Button title={buttonLabel} onPress={onButtonPress} size="sm" />
       )}
     </View>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    backgroundColor: colors.background,
+  },
+  title: {
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.bold,
+    color: colors.foreground,
+  },
+})

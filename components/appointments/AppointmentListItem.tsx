@@ -1,35 +1,126 @@
-import { View, Text } from 'react-native';
-import { MapPin } from 'lucide-react-native';
-import Card from '../ui/Card';
-import { Appointment } from '../../types';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { View, Text, StyleSheet } from 'react-native'
+import { MapPin } from 'lucide-react-native'
+import Card from '../ui/Card'
+import { Appointment } from '../../types'
+import { format } from 'date-fns'
+import {
+  colors,
+  colorsWithOpacity,
+  fontSize,
+  fontWeight,
+  borderRadius,
+  spacing,
+} from '../../constants/colors'
 
 type AppointmentListItemProps = {
-  appointment: Appointment;
-};
+  appointment: Appointment
+}
 
-export default function AppointmentListItem({ appointment }: AppointmentListItemProps) {
-  const formattedTime = format(appointment.date, "HH:mm");
+export default function AppointmentListItem({
+  appointment,
+}: AppointmentListItemProps) {
+  const appointmentDate = new Date(appointment.date)
+  const formattedTime = format(appointmentDate, 'HH:mm')
 
   return (
-    <Card className="p-4">
-      <View className="flex-row justify-between items-start">
-        <View className="flex-1 mr-2">
-          <Text className="text-base font-bold text-secondary-foreground bg-secondary/90 px-3 py-1 rounded-full self-start mb-2 capitalize">{appointment.specialty}</Text>
-          <Text className="text-lg font-bold text-foreground">{appointment.doctor}</Text>
-          <Text className="text-base text-muted-foreground">Paciente: {appointment.patient}</Text>
+    <Card style={styles.card}>
+      <View style={styles.header}>
+        <View style={styles.leftSection}>
+          <Text style={styles.specialty}>
+            {appointment.specialty.charAt(0).toUpperCase() +
+              appointment.specialty.slice(1).toLowerCase()}
+          </Text>
+          <Text style={styles.doctor}>{appointment.doctor}</Text>
+          {appointment.patient && (
+            <Text style={styles.patient}>
+              Paciente: {appointment.patient.name}
+            </Text>
+          )}
         </View>
-        <View className="items-end">
-           <Text className="text-lg font-bold text-foreground">{formattedTime}</Text>
-           <Text className="text-sm text-muted-foreground">{format(appointment.date, "dd/MM/yy")}</Text>
+        <View style={styles.rightSection}>
+          <Text style={styles.time}>{formattedTime}</Text>
+          <Text style={styles.date}>
+            {format(appointmentDate, 'dd/MM/yy')}
+          </Text>
         </View>
       </View>
-      <View className="border-t border-border my-3" />
-      <View className="flex-row items-center">
-        <MapPin size={16} className="text-muted-foreground mr-2" />
-        <Text className="text-sm text-muted-foreground flex-1">{appointment.location}</Text>
-      </View>
+      {appointment.location && (
+        <>
+          <View style={styles.divider} />
+          <View style={styles.locationContainer}>
+            <MapPin
+              size={16}
+              color={colors.muted.foreground}
+              style={styles.locationIcon}
+            />
+            <Text style={styles.location}>{appointment.location}</Text>
+          </View>
+        </>
+      )}
     </Card>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  card: {
+    padding: spacing.md,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  leftSection: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  specialty: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+    color: colors.secondary.foreground,
+    backgroundColor: colorsWithOpacity['secondary/90'],
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: borderRadius.full,
+    alignSelf: 'flex-start',
+    marginBottom: spacing.sm,
+  },
+  doctor: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.foreground,
+  },
+  patient: {
+    fontSize: fontSize.base,
+    color: colors.muted.foreground,
+  },
+  rightSection: {
+    alignItems: 'flex-end',
+  },
+  time: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.foreground,
+  },
+  date: {
+    fontSize: fontSize.sm,
+    color: colors.muted.foreground,
+  },
+  divider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    marginVertical: 12,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationIcon: {
+    marginRight: spacing.sm,
+  },
+  location: {
+    fontSize: fontSize.sm,
+    color: colors.muted.foreground,
+    flex: 1,
+  },
+})

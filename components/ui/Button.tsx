@@ -1,73 +1,95 @@
-import { Pressable, Text, ActivityIndicator } from "react-native";
-import { styled } from "nativewind";
-
-const StyledPressable = styled(Pressable);
+import {
+  Pressable,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  ViewStyle,
+  TextStyle,
+} from 'react-native'
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  borderRadius,
+} from '../../constants/colors'
 
 type ButtonProps = {
-  title: string;
-  onPress?: () => void;
-  variant?: "default" | "destructive" | "outline" | "secondary";
-  size?: "default" | "sm" | "lg";
-  loading?: boolean;
-  disabled?: boolean;
-  className?: string;
-};
+  title: string
+  onPress?: () => void
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary'
+  size?: 'default' | 'sm' | 'lg'
+  loading?: boolean
+  disabled?: boolean
+  style?: ViewStyle
+}
 
 const Button = ({
   title,
   onPress,
-  variant = "default",
-  size = "default",
+  variant = 'default',
+  size = 'default',
   loading = false,
   disabled = false,
-  className = "",
+  style,
 }: ButtonProps) => {
-  const baseClasses = "justify-center items-center rounded-md active:opacity-80";
-  const disabledClasses = "opacity-50";
+  const getButtonStyle = (): ViewStyle[] => {
+    const baseStyle: ViewStyle = {
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: borderRadius.md,
+      opacity: disabled || loading ? 0.5 : 1,
+    }
 
-  const sizeClasses = {
-    default: "h-10 px-4",
-    sm: "h-9 px-3",
-    lg: "h-12 px-8",
-  };
+    const sizeStyles: Record<typeof size, ViewStyle> = {
+      default: { height: 40, paddingHorizontal: 16 },
+      sm: { height: 36, paddingHorizontal: 12 },
+      lg: { height: 48, paddingHorizontal: 32 },
+    }
 
-  const variantClasses = {
-    default: "bg-primary",
-    destructive: "bg-destructive",
-    outline: "bg-transparent border border-input",
-    secondary: "bg-secondary",
-  };
-  
-  const textVariantClasses = {
-    default: "text-primary-foreground",
-    destructive: "text-destructive-foreground",
-    outline: "text-foreground",
-    secondary: "text-secondary-foreground",
-  };
-  
-  const textSizeClasses = {
-    default: "text-base font-semibold",
-    sm: "text-sm font-medium",
-    lg: "text-lg font-semibold",
-  };
+    const variantStyles: Record<typeof variant, ViewStyle> = {
+      default: { backgroundColor: colors.primary.DEFAULT },
+      destructive: { backgroundColor: colors.destructive.DEFAULT },
+      outline: {
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderColor: colors.input,
+      },
+      secondary: { backgroundColor: colors.secondary.DEFAULT },
+    }
+
+    return [baseStyle, sizeStyles[size], variantStyles[variant], style]
+  }
+
+  const getTextStyle = (): TextStyle[] => {
+    const sizeStyles: Record<typeof size, TextStyle> = {
+      default: { fontSize: fontSize.base, fontWeight: fontWeight.semibold },
+      sm: { fontSize: fontSize.sm, fontWeight: fontWeight.medium },
+      lg: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold },
+    }
+
+    const variantStyles: Record<typeof variant, TextStyle> = {
+      default: { color: colors.primary.foreground },
+      destructive: { color: colors.destructive.foreground },
+      outline: { color: colors.foreground },
+      secondary: { color: colors.secondary.foreground },
+    }
+
+    return [sizeStyles[size], variantStyles[variant]]
+  }
 
   return (
-    <StyledPressable
+    <Pressable
       onPress={onPress}
       disabled={disabled || loading}
-      className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${
-        disabled || loading ? disabledClasses : ""
-      } ${className}`}
+      style={getButtonStyle()}
     >
       {loading ? (
         <ActivityIndicator color="white" />
       ) : (
-        <Text className={`${textSizeClasses[size]} ${textVariantClasses[variant]}`}>
-          {title}
-        </Text>
+        <Text style={getTextStyle()}>{title}</Text>
       )}
-    </StyledPressable>
-  );
-};
+    </Pressable>
+  )
+}
 
-export default Button;
+export default Button

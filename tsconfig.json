@@ -1,5 +1,12 @@
 {
-  "compilerOptions": {},
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
+  },
   "extends": "expo/tsconfig.base",
   "include": [
     "**/*.ts",

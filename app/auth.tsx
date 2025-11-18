@@ -1,76 +1,219 @@
-import { useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator } from "react-native";
-import { supabase } from "../lib/supabase";
-import { Heart } from "lucide-react-native";
+import { useState } from 'react'
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native'
+import { supabase } from '../lib/supabase'
+import { Heart } from 'lucide-react-native'
+import {
+  colors,
+  colorsWithOpacity,
+  fontSize,
+  fontWeight,
+  borderRadius,
+  spacing,
+} from '../constants/colors'
 
 export default function AuthScreen() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [isSignUp, setIsSignUp] = useState(false)
 
   async function signInWithEmail() {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    });
+    if (!email || !password) {
+      alert('Por favor, preencha email e senha')
+      return
+    }
 
-    if (error) alert(error.message);
-    setLoading(false);
+    setLoading(true)
+    
+    if (isSignUp) {
+      // Cadastro
+      const { error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      })
+
+      if (error) {
+        alert(error.message)
+      } else {
+        alert('Conta criada com sucesso! Verifique seu email para confirmar.')
+      }
+    } else {
+      // Login
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      })
+
+      if (error) {
+        alert(error.message)
+      }
+    }
+    
+    setLoading(false)
   }
 
   return (
-    <View className="flex-1 justify-center items-center bg-background p-8">
-      <View className="absolute inset-0 bg-primary/5"></View>
-      
-      <View className="w-full max-w-sm">
-        <View className="items-center mb-10">
-          <Heart size={64} className="text-primary" fill="hsl(185 70% 45%)" />
-          <Text className="text-3xl font-bold text-foreground mt-4">Cuidado com a Saúde</Text>
-          <Text className="text-base text-muted-foreground mt-2">Entre para continuar</Text>
+    <View style={styles.container}>
+      <View style={styles.backgroundOverlay} />
+
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Heart
+            size={64}
+            color={colors.primary.DEFAULT}
+            fill={colors.primary.DEFAULT}
+          />
+          <Text style={styles.title}>Cuidado com a Saúde</Text>
+          <Text style={styles.subtitle}>Entre para continuar</Text>
         </View>
 
-        <View className="space-y-4">
-          <View>
-            <Text className="text-base font-medium text-foreground mb-2">Email</Text>
+        <View style={styles.form}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email</Text>
             <TextInput
-              className="bg-input border border-border rounded-md h-12 px-4 text-base text-foreground"
+              style={styles.input}
               onChangeText={setEmail}
               value={email}
               placeholder="email@address.com"
+              placeholderTextColor={colors.muted.foreground}
               autoCapitalize="none"
               keyboardType="email-address"
             />
           </View>
-          <View>
-            <Text className="text-base font-medium text-foreground mb-2">Senha</Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Senha</Text>
             <TextInput
-              className="bg-input border border-border rounded-md h-12 px-4 text-base text-foreground"
+              style={styles.input}
               onChangeText={setPassword}
               value={password}
               secureTextEntry
               placeholder="Sua senha"
+              placeholderTextColor={colors.muted.foreground}
               autoCapitalize="none"
             />
           </View>
         </View>
 
         <Pressable
-          className="bg-primary rounded-md h-12 justify-center items-center mt-8 active:opacity-80"
+          style={[styles.button, loading && styles.buttonDisabled]}
           onPress={signInWithEmail}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-primary-foreground text-base font-bold">Entrar</Text>
+            <Text style={styles.buttonText}>
+              {isSignUp ? 'Criar Conta' : 'Entrar'}
+            </Text>
           )}
         </Pressable>
-        
-        <Text className="text-center text-muted-foreground mt-8">
-          Não tem uma conta? <Text className="text-primary font-semibold">Cadastre-se</Text>
-        </Text>
+
+        <Pressable
+          onPress={() => setIsSignUp(!isSignUp)}
+          style={styles.toggleButton}
+        >
+          <Text style={styles.footerText}>
+            {isSignUp ? 'Já tem uma conta? ' : 'Não tem uma conta? '}
+            <Text style={styles.linkText}>
+              {isSignUp ? 'Entrar' : 'Cadastre-se'}
+            </Text>
+          </Text>
+        </Pressable>
       </View>
     </View>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    padding: spacing.lg * 2,
+  },
+  backgroundOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colorsWithOpacity['primary/5'],
+  },
+  content: {
+    width: '100%',
+    maxWidth: 384,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  title: {
+    fontSize: fontSize['3xl'],
+    fontWeight: fontWeight.bold,
+    color: colors.foreground,
+    marginTop: spacing.md,
+  },
+  subtitle: {
+    fontSize: fontSize.base,
+    color: colors.muted.foreground,
+    marginTop: spacing.sm,
+  },
+  form: {
+    gap: spacing.md,
+  },
+  inputGroup: {
+    marginBottom: spacing.sm,
+  },
+  label: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
+    color: colors.foreground,
+    marginBottom: spacing.sm,
+  },
+  input: {
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    height: 48,
+    paddingHorizontal: spacing.md,
+    fontSize: fontSize.base,
+    color: colors.foreground,
+  },
+  button: {
+    backgroundColor: colors.primary.DEFAULT,
+    borderRadius: borderRadius.md,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.lg * 2,
+  },
+  buttonDisabled: {
+    opacity: 0.8,
+  },
+  buttonText: {
+    color: colors.primary.foreground,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+  },
+  footerText: {
+    textAlign: 'center',
+    color: colors.muted.foreground,
+    marginTop: spacing.lg * 2,
+  },
+  linkText: {
+    color: colors.primary.DEFAULT,
+    fontWeight: fontWeight.semibold,
+  },
+  toggleButton: {
+    marginTop: spacing.lg * 2,
+  },
+})
