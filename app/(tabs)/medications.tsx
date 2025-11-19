@@ -3,12 +3,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import ScreenHeader from '../../components/ui/ScreenHeader'
 import { Medication } from '../../types'
 import MedicationListItem from '../../components/medications/MedicationListItem'
+import { useRouter } from 'expo-router'
 import { colors, spacing, fontSize } from '../../constants/colors'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/auth'
 import { useEffect, useState } from 'react'
 
 export default function MedicationsScreen() {
+  const router = useRouter()
   const { user } = useAuth()
   const [medications, setMedications] = useState<Medication[]>([])
   const [loading, setLoading] = useState(true)
@@ -20,7 +22,7 @@ export default function MedicationsScreen() {
       setLoading(true)
       const { data, error } = await supabase
         .from('medications')
-        .select('*, patient:patients(*)')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
@@ -42,7 +44,7 @@ export default function MedicationsScreen() {
         <ScreenHeader
           title="Meus Remédios"
           buttonLabel="Adicionar"
-          onButtonPress={() => alert('Adicionar novo remédio')}
+          onButtonPress={() => router.push('/medications/add')}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
@@ -56,7 +58,7 @@ export default function MedicationsScreen() {
       <ScreenHeader
         title="Meus Remédios"
         buttonLabel="Adicionar"
-        onButtonPress={() => alert('Adicionar novo remédio')}
+        onButtonPress={() => router.push('/medications/add')}
       />
       <FlatList
         data={medications}

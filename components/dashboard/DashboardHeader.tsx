@@ -8,7 +8,7 @@ import {
 
 export default function DashboardHeader() {
   // Mock data, substituir com dados do usuário
-  const userName = 'Maria de Fatima'
+  const userName = 'Maria'
 
   return (
     <View style={styles.container}>

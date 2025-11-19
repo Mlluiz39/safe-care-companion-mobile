@@ -26,7 +26,7 @@ export default function DocumentsScreen() {
       setLoading(true)
       const { data, error } = await supabase
         .from('documents')
-        .select('*, patient:patients(*)')
+        .select('*')
         .eq('user_id', user.id)
         .order('date', { ascending: false })
 

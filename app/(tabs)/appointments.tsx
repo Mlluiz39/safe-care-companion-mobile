@@ -26,7 +26,7 @@ export default function AppointmentsScreen() {
       setLoading(true)
       const { data, error } = await supabase
         .from('appointments')
-        .select('*, patient:patients(*)')
+        .select('*')
         .eq('user_id', user.id)
         .order('date', { ascending: false })
 
