@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native'
-import { Pill, Calendar, FileText, Users } from 'lucide-react-native'
-import { useRouter } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
+import { useRouter, type Href } from 'expo-router'
 import {
   colors,
   colorsWithOpacity,
@@ -10,32 +10,40 @@ import {
   spacing,
 } from '../../constants/colors'
 
-const menuItems = [
+type MenuItem = {
+  title: string
+  icon: typeof Ionicons
+  color: string
+  bgColor: string
+  href: Href
+}
+
+const menuItems: MenuItem[] = [
   {
     title: 'Remédios',
-    icon: Pill,
+    icon: Ionicons,
     color: colors.primary.DEFAULT,
     bgColor: colorsWithOpacity['primary/10'],
     href: '/medications',
   },
   {
     title: 'Consultas',
-    icon: Calendar,
+    icon: Ionicons,
     color: colors.secondary.DEFAULT,
     bgColor: colorsWithOpacity['secondary/10'],
     href: '/appointments',
   },
   {
     title: 'Exames',
-    icon: FileText,
+    icon: Ionicons,
     color: colors.accent.DEFAULT,
     bgColor: colorsWithOpacity['accent/10'],
     href: '/documents',
   },
   {
     title: 'Familiares',
-    icon: Users,
-    color: '#3B82F6', // blue-500
+    icon: Ionicons,
+    color: '#3B82F6',
     bgColor: colorsWithOpacity['blue-500/10'],
     href: '/family',
   },
@@ -52,12 +60,24 @@ export default function QuickMenu() {
           <Pressable
             key={item.title}
             style={styles.menuItem}
-            onPress={() => router.push(item.href as any)}
+            onPress={() => router.push(item.href)}
           >
             <View
               style={[styles.iconContainer, { backgroundColor: item.bgColor }]}
             >
-              <item.icon size={32} color={item.color} />
+              <item.icon
+                name={
+                  item.title === 'Remédios'
+                    ? 'medkit'
+                    : item.title === 'Consultas'
+                    ? 'calendar'
+                    : item.title === 'Exames'
+                    ? 'document-text'
+                    : 'people'
+                }
+                size={32}
+                color={item.color}
+              />
             </View>
             <Text style={styles.menuItemText}>{item.title}</Text>
           </Pressable>

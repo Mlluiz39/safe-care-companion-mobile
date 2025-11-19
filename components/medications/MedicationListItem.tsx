@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native'
-import { Pill } from 'lucide-react-native'
+import { Ionicons } from '@expo/vector-icons';
 import Card from '../ui/Card'
 import { Medication } from '../../types'
 import {
@@ -21,7 +21,7 @@ export default function MedicationListItem({
   return (
     <Card style={styles.card}>
       <View style={styles.iconContainer}>
-        <Pill size={24} color={colors.primary.DEFAULT} />
+        <Ionicons name="medkit" size={24} />
       </View>
       <View style={styles.content}>
         <Text style={styles.name} numberOfLines={1}>

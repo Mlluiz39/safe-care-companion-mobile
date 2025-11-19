@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from 'react-native'
 import { supabase } from '../lib/supabase'
-import { Heart } from 'lucide-react-native'
+import { Ionicons } from '@expo/vector-icons';
 import {
   colors,
   colorsWithOpacity,
@@ -65,11 +65,7 @@ export default function AuthScreen() {
 
       <View style={styles.content}>
         <View style={styles.header}>
-          <Heart
-            size={64}
-            color={colors.primary.DEFAULT}
-            fill={colors.primary.DEFAULT}
-          />
+          <Ionicons name="heart-circle" size={64} color={colors.primary.DEFAULT} />
           <Text style={styles.title}>Cuidado com a Saúde</Text>
           <Text style={styles.subtitle}>Entre para continuar</Text>
         </View>

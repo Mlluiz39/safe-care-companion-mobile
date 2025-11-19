@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native'
-import { FileText, Download } from 'lucide-react-native'
+import { Ionicons } from '@expo/vector-icons';
 import Card from '../ui/Card'
 import { Document } from '../../types'
 import { format } from 'date-fns'
@@ -24,14 +24,14 @@ export default function DocumentGridItem({ document }: DocumentGridItemProps) {
     <Card style={styles.card}>
       <View style={styles.header}>
         <View style={styles.iconContainer}>
-          <FileText size={24} color={colors.accent.DEFAULT} />
+          <Ionicons name="document-text-outline" size={24} color={colors.accent.foreground} />
         </View>
         {document.file_url && (
           <Pressable
             onPress={() => alert('Baixar documento')}
             style={styles.downloadButton}
           >
-            <Download size={20} color={colors.muted.foreground} />
+            <Ionicons name="download-outline" size={24} color={colors.accent.foreground} />
           </Pressable>
         )}
       </View>

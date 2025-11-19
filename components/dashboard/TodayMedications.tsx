@@ -2,7 +2,7 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-nativ
 import Card from '../ui/Card'
 import Button from '../ui/Button'
 import { Medication } from '../../types'
-import { Pill } from 'lucide-react-native'
+import { Ionicons } from '@expo/vector-icons';
 import {
   colors,
   colorsWithOpacity,
@@ -53,7 +53,7 @@ export default function TodayMedications() {
       <View style={styles.cardContent}>
         <View style={styles.leftSection}>
           <View style={styles.iconContainer}>
-            <Pill size={24} color={colors.primary.DEFAULT} />
+            <Ionicons name="medkit" size={24} color={colors.primary.DEFAULT} />
           </View>
           <View style={styles.textContainer}>
             <Text style={styles.medicationName} numberOfLines={1}>

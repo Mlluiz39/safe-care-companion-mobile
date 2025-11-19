@@ -14,14 +14,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.dualite.health-care-mobile"
+      "bundleIdentifier": "com.mlluiz39.health-care-mobile"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.dualite.health_care_mobile"
+      "package": "com.mlluiz39.health_care_mobile"
     },
     "web": {
       "bundler": "metro",

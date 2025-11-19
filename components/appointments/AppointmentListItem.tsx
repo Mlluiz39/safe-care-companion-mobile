@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native'
-import { MapPin } from 'lucide-react-native'
+import { Ionicons } from '@expo/vector-icons';
 import Card from '../ui/Card'
 import { Appointment } from '../../types'
 import { format } from 'date-fns'
@@ -48,7 +48,8 @@ export default function AppointmentListItem({
         <>
           <View style={styles.divider} />
           <View style={styles.locationContainer}>
-            <MapPin
+            <Ionicons
+              name="location-outline"
               size={16}
               color={colors.muted.foreground}
               style={styles.locationIcon}
