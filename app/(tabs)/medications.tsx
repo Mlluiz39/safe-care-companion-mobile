@@ -3,40 +3,45 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import ScreenHeader from '../../components/ui/ScreenHeader'
 import { Medication } from '../../types'
 import MedicationListItem from '../../components/medications/MedicationListItem'
-import { useRouter } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
+import { useCallback, useState } from 'react'
 import { colors, spacing, fontSize } from '../../constants/colors'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/auth'
-import { useEffect, useState } from 'react'
+import { usePatient } from '../../context/PatientContext'
 
 export default function MedicationsScreen() {
   const router = useRouter()
   const { user } = useAuth()
+  const { currentPatient } = usePatient() // Added hook
   const [medications, setMedications] = useState<Medication[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchMedications = async () => {
-      if (!user) return
+  useFocusEffect(
+    useCallback(() => {
+      const fetchMedications = async () => {
+        if (!user || !currentPatient) return // Check for patient
 
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('medications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        // loading spinner only on first load could be better, but acceptable here
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('medications')
+          .select('*, patient:patients(*)')
+          .eq('patient_id', currentPatient.id) // Filter by Patient ID
+          .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Erro ao buscar medicamentos:', error)
-        alert('Não foi possível carregar os medicamentos.')
-      } else {
-        setMedications(data || [])
+        if (error) {
+          console.error('Erro ao buscar medicamentos:', error)
+          // Optional: Don't alert on every focus if error persists, or handle gracefully
+        } else {
+          setMedications(data || [])
+        }
+        setLoading(false)
       }
-      setLoading(false)
-    }
 
-    fetchMedications()
-  }, [user])
+      fetchMedications()
+    }, [user, currentPatient]) // Added dep
+  )
 
   if (loading) {
     return (

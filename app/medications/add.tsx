@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   View,
   TextInput,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   StyleSheet,
+  Switch,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -14,17 +15,32 @@ import { addMedication } from '../../lib/medications'
 import { colors, spacing, fontSize } from '../../constants/colors'
 import ScreenHeader from '../../components/ui/ScreenHeader'
 
+import { usePatient } from '../../context/PatientContext'
+import { registerForPushNotificationsAsync, scheduleMedicationNotification } from '../../lib/notifications'
+
 export default function AddMedicationScreen() {
   const router = useRouter()
   const { user } = useAuth()
+  const { currentPatient } = usePatient()
 
   const [name, setName] = useState('')
   const [dosage, setDosage] = useState('')
+  const [frequency, setFrequency] = useState('')
   const [description, setDescription] = useState('')
+  const [remindMe, setRemindMe] = useState(false)
+
+  useEffect(() => {
+    registerForPushNotificationsAsync()
+  }, [])
 
   const handleSave = async () => {
-    if (!name.trim()) {
-      Alert.alert('Erro', 'O nome do medicamento é obrigatório.')
+    if (!name.trim() || !dosage.trim() || !frequency.trim()) {
+      Alert.alert('Erro', 'Nome, Dosagem e Frequência são obrigatórios.')
+      return
+    }
+
+    if (!currentPatient) {
+      Alert.alert('Erro', 'Selecione um paciente antes de adicionar.')
       return
     }
 
@@ -32,11 +48,22 @@ export default function AddMedicationScreen() {
       await addMedication({
         name,
         dosage,
-        description,
+        frequency,
+        notes: description,
         start_date: new Date().toISOString(),
         user_id: user!.id,
-        patient_id: user!.id, // ou id do paciente real
+        patient_id: currentPatient.id,
       })
+
+      if (remindMe) {
+        // Schedule a notification for 5 seconds later as a demo logic
+        // Real logic would parse 'frequency' to set actual intervals
+        await scheduleMedicationNotification(
+          `Hora do Remédio: ${name}`,
+          `Tomar ${dosage} de ${currentPatient.name}`,
+          undefined // Immediate for demo
+        )
+      }
 
       Alert.alert('Sucesso', 'Medicamento cadastrado!')
       router.back()
@@ -59,9 +86,16 @@ export default function AddMedicationScreen() {
 
         <TextInput
           style={styles.input}
-          placeholder="Dosagem"
+          placeholder="Dosagem (ex: 50mg)"
           value={dosage}
           onChangeText={setDosage}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Frequência (ex: 8 em 8 horas)"
+          value={frequency}
+          onChangeText={setFrequency}
         />
 
         <TextInput
@@ -71,6 +105,16 @@ export default function AddMedicationScreen() {
           value={description}
           onChangeText={setDescription}
         />
+
+        <View style={styles.switchContainer}>
+          <Text style={styles.switchLabel}>Lembrar-me</Text>
+          <Switch
+            trackColor={{ false: "#767577", true: colors.primary.DEFAULT }}
+            thumbColor={remindMe ? "#f4f3f4" : "#f4f3f4"}
+            onValueChange={setRemindMe}
+            value={remindMe}
+          />
+        </View>
 
         <TouchableOpacity style={styles.button} onPress={handleSave}>
           <Text style={styles.buttonText}>Salvar</Text>
@@ -99,6 +143,20 @@ const styles = StyleSheet.create({
   largeInput: {
     height: 120,
     textAlignVertical: 'top',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+    backgroundColor: colors.card,
+    padding: spacing.md,
+    borderRadius: 10,
+  },
+  switchLabel: {
+    fontSize: fontSize.base,
+    color: colors.foreground,
+    fontWeight: '500',
   },
   button: {
     backgroundColor: colors.primary.DEFAULT,

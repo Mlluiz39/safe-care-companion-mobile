@@ -10,37 +10,44 @@ import ScreenHeader from '../../components/ui/ScreenHeader'
 import { Document } from '../../types'
 import DocumentGridItem from '../../components/documents/DocumentGridItem'
 import { colors, spacing, fontSize } from '../../constants/colors'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/auth'
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
+
+import { usePatient } from '../../context/PatientContext'
 
 export default function DocumentsScreen() {
+  const router = useRouter()
   const { user } = useAuth()
+  const { currentPatient } = usePatient()
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchDocuments = async () => {
-      if (!user) return
+  useFocusEffect(
+    useCallback(() => {
+      const fetchDocuments = async () => {
+        if (!user || !currentPatient) return
 
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('patient_id', currentPatient.id)
+          .order('date', { ascending: false })
 
-      if (error) {
-        console.error('Erro ao buscar documentos:', error)
-        alert('Não foi possível carregar os documentos.')
-      } else {
-        setDocuments(data || [])
+        if (error) {
+          console.error('Erro ao buscar documentos:', error)
+          // alert('Não foi possível carregar os documentos.')
+        } else {
+          setDocuments(data || [])
+        }
+        setLoading(false)
       }
-      setLoading(false)
-    }
 
-    fetchDocuments()
-  }, [user])
+      fetchDocuments()
+    }, [user, currentPatient])
+  )
 
   if (loading) {
     return (
@@ -48,7 +55,7 @@ export default function DocumentsScreen() {
         <ScreenHeader
           title="Meus Exames"
           buttonLabel="Adicionar"
-          onButtonPress={() => alert('Adicionar novo exame')}
+          onButtonPress={() => router.push('/documents/add')}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
@@ -62,7 +69,7 @@ export default function DocumentsScreen() {
       <ScreenHeader
         title="Meus Exames"
         buttonLabel="Adicionar"
-        onButtonPress={() => alert('Adicionar novo exame')}
+        onButtonPress={() => router.push('/documents/add')}
       />
       <FlatList
         data={documents}

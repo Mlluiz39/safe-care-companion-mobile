@@ -58,6 +58,22 @@ Após executar todas as migrations, você deve ter as seguintes tabelas:
 - ✅ `medications` - Medicamentos
 - ✅ `appointments` - Consultas médicas
 - ✅ `documents` - Documentos e exames
+- ✅ `profiles` - Perfis de usuário
+
+#### Migration 6: Profiles
+```sql
+-- Execute o conteúdo do arquivo: supabase/migrations/20250117170000_create_profiles.sql
+```
+
+#### Migration 7: Storage (Avatars)
+```sql
+-- Execute o conteúdo do arquivo: supabase/migrations/20250117170500_create_storage_bucket.sql
+```
+
+#### Migration 8: Invite Code Lookup
+```sql
+-- Execute o conteúdo do arquivo: supabase/migrations/20250117171000_fix_invite_lookup.sql
+```
 
 ## 🔒 Row Level Security (RLS)
 

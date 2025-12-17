@@ -1,4 +1,5 @@
 import { Stack, useRouter, useSegments } from 'expo-router'
+import { initNotifications } from '../lib/notifications'
 import { StatusBar } from 'expo-status-bar'
 import { AuthProvider, useAuth } from '../lib/auth'
 import { useEffect } from 'react'
@@ -11,13 +12,14 @@ const InitialLayout = () => {
   const router = useRouter()
 
   useEffect(() => {
+    initNotifications()
     if (isLoading) return
 
-    const inTabsGroup = segments[0] === '(tabs)'
+    const inAuthGroup = segments[0] === 'auth'
 
-    if (session && !inTabsGroup) {
+    if (session && inAuthGroup) {
       router.replace('/(tabs)')
-    } else if (!session) {
+    } else if (!session && !inAuthGroup) {
       router.replace('/auth')
     }
   }, [session, isLoading, segments, router])
@@ -32,6 +34,11 @@ const InitialLayout = () => {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
+        <Stack.Screen name="medications/add" options={{ headerShown: false }} />
+        <Stack.Screen name="appointments/add" options={{ headerShown: false }} />
+        <Stack.Screen name="documents/add" options={{ headerShown: false }} />
+        <Stack.Screen name="family/add" options={{ headerShown: false }} />
+        <Stack.Screen name="patient/select" options={{ headerShown: false }} />
       </Stack>
     </>
   )
@@ -44,10 +51,14 @@ const styles = StyleSheet.create({
   },
 })
 
+import { PatientProvider } from '../context/PatientContext'
+
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <InitialLayout />
+      <PatientProvider>
+        <InitialLayout />
+      </PatientProvider>
     </AuthProvider>
   )
 }

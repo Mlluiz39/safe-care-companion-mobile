@@ -21,22 +21,28 @@ import {
 export default function AuthScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [name, setName] = useState('') // Added name state
   const [loading, setLoading] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)
 
   async function signInWithEmail() {
-    if (!email || !password) {
-      alert('Por favor, preencha email e senha')
+    if (!email || !password || (isSignUp && !name)) { // Validate name on sign up
+      alert('Por favor, preencha todos os campos.')
       return
     }
 
     setLoading(true)
-    
+
     if (isSignUp) {
       // Cadastro
       const { error } = await supabase.auth.signUp({
         email: email,
         password: password,
+        options: {
+          data: {
+            name: name, // Save name to metadata
+          },
+        },
       })
 
       if (error) {
@@ -55,7 +61,7 @@ export default function AuthScreen() {
         alert(error.message)
       }
     }
-    
+
     setLoading(false)
   }
 
@@ -71,6 +77,18 @@ export default function AuthScreen() {
         </View>
 
         <View style={styles.form}>
+          {isSignUp && ( // Show name input only for sign up
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Nome</Text>
+              <TextInput
+                style={styles.input}
+                onChangeText={setName}
+                value={name}
+                placeholder="Seu nome"
+                placeholderTextColor={colors.muted.foreground}
+              />
+            </View>
+          )}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
             <TextInput
@@ -111,15 +129,18 @@ export default function AuthScreen() {
           )}
         </Pressable>
 
+        <View style={styles.dividerContainer}>
+          <View style={styles.divider} />
+          <Text style={styles.dividerText}>OU</Text>
+          <View style={styles.divider} />
+        </View>
+
         <Pressable
           onPress={() => setIsSignUp(!isSignUp)}
-          style={styles.toggleButton}
+          style={styles.secondaryButton}
         >
-          <Text style={styles.footerText}>
-            {isSignUp ? 'Já tem uma conta? ' : 'Não tem uma conta? '}
-            <Text style={styles.linkText}>
-              {isSignUp ? 'Entrar' : 'Cadastre-se'}
-            </Text>
+          <Text style={styles.secondaryButtonText}>
+            {isSignUp ? 'Já tem uma conta? Entrar' : 'Não tem conta? Cadastre-se'}
           </Text>
         </Pressable>
       </View>
@@ -208,6 +229,33 @@ const styles = StyleSheet.create({
   linkText: {
     color: colors.primary.DEFAULT,
     fontWeight: fontWeight.semibold,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: spacing.lg,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    marginHorizontal: spacing.md,
+    color: colors.muted.foreground,
+    fontSize: fontSize.sm,
+  },
+  secondaryButton: {
+    padding: spacing.md,
+    alignItems: 'center',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.primary.DEFAULT,
+  },
+  secondaryButtonText: {
+    color: colors.primary.DEFAULT,
+    fontWeight: fontWeight.bold,
+    fontSize: fontSize.base,
   },
   toggleButton: {
     marginTop: spacing.lg * 2,

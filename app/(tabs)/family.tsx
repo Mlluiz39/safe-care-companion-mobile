@@ -1,40 +1,47 @@
 import { ActivityIndicator, FlatList, Text, View, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import ScreenHeader from '../../components/ui/ScreenHeader'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { supabase } from '../../lib/supabase'
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { FamilyMember } from '../../types'
 import FamilyMemberCard from '../../components/family/FamilyMemberCard'
 import { useAuth } from '../../lib/auth'
 import { colors, fontSize, spacing } from '../../constants/colors'
 
+import { usePatient } from '../../context/PatientContext'
+
 export default function FamilyScreen() {
+  const router = useRouter()
   const { user } = useAuth()
+  const { currentPatient } = usePatient()
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchFamilyMembers = async () => {
-      if (!user) return
+  useFocusEffect(
+    useCallback(() => {
+      const fetchFamilyMembers = async () => {
+        if (!user || !currentPatient) return
 
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('family_members')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('family_members')
+          .select('*')
+          .eq('patient_id', currentPatient.id)
+          .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Erro ao buscar familiares:', error)
-        alert('Não foi possível carregar os familiares.')
-      } else {
-        setFamilyMembers(data || [])
+        if (error) {
+          console.error('Erro ao buscar familiares:', error)
+          // alert('Não foi possível carregar os familiares.')
+        } else {
+          setFamilyMembers(data || [])
+        }
+        setLoading(false)
       }
-      setLoading(false)
-    }
 
-    fetchFamilyMembers()
-  }, [user])
+      fetchFamilyMembers()
+    }, [user, currentPatient])
+  )
 
   if (loading) {
     return (
@@ -49,7 +56,7 @@ export default function FamilyScreen() {
       <ScreenHeader
         title="Meus Familiares"
         buttonLabel="Adicionar"
-        onButtonPress={() => alert('Adicionar novo familiar')}
+        onButtonPress={() => router.push('/family/add')}
       />
       <FlatList
         data={familyMembers}

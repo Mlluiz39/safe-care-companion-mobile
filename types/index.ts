@@ -58,6 +58,7 @@ export interface Document {
 export interface FamilyMember {
   id: string
   user_id: string
+  patient_id?: string
   name: string
   relationship: string
   avatar_url?: string

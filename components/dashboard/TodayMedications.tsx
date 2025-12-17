@@ -12,18 +12,23 @@ import {
   spacing,
 } from '../../constants/colors'
 import { supabase } from '../../lib/supabase'
-import { useAuth } from '../../lib/auth'
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { startOfToday, endOfToday } from 'date-fns'
+import { usePatient } from '../../context/PatientContext'
 
 export default function TodayMedications() {
-  const { user } = useAuth()
+  const { currentPatient } = usePatient()
   const [medications, setMedications] = useState<Medication[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchTodayMedications = async () => {
-      if (!user) return
+      // If no patient selected, list should be empty or prompting selection
+      if (!currentPatient) {
+        setMedications([])
+        setLoading(false)
+        return
+      }
 
       setLoading(true)
       const todayStart = startOfToday().toISOString()
@@ -32,7 +37,7 @@ export default function TodayMedications() {
       const { data, error } = await supabase
         .from('medications')
         .select('*, patient:patients(*)')
-        .eq('user_id', user.id)
+        .eq('patient_id', currentPatient.id) // Filter by patient, not user
         .gte('start_date', todayStart)
         .lte('start_date', todayEnd)
         .order('start_date', { ascending: true })
@@ -46,7 +51,7 @@ export default function TodayMedications() {
     }
 
     fetchTodayMedications()
-  }, [user])
+  }, [currentPatient])
 
   const renderItem = ({ item }: { item: Medication }) => (
     <Card style={styles.card}>

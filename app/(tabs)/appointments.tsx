@@ -10,37 +10,42 @@ import ScreenHeader from '../../components/ui/ScreenHeader'
 import { Appointment } from '../../types'
 import AppointmentListItem from '../../components/appointments/AppointmentListItem'
 import { colors, fontSize, fontWeight, spacing } from '../../constants/colors'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/auth'
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
+import { usePatient } from '../../context/PatientContext'
 
 export default function AppointmentsScreen() {
+  const router = useRouter()
   const { user } = useAuth()
+  const { currentPatient } = usePatient()
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      if (!user) return
+  useFocusEffect(
+    useCallback(() => {
+      const fetchAppointments = async () => {
+        if (!user || !currentPatient) return
 
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('appointments')
+          .select('*')
+          .eq('patient_id', currentPatient.id)
+          .order('date', { ascending: false })
 
-      if (error) {
-        console.error('Erro ao buscar consultas:', error)
-        alert('Não foi possível carregar as consultas.')
-      } else {
-        setAppointments(data || [])
+        if (error) {
+          console.error('Erro ao buscar consultas:', error)
+        } else {
+          setAppointments(data || [])
+        }
+        setLoading(false)
       }
-      setLoading(false)
-    }
 
-    fetchAppointments()
-  }, [user])
+      fetchAppointments()
+    }, [user, currentPatient])
+  )
 
   const now = new Date()
   const upcoming = appointments
@@ -67,7 +72,7 @@ export default function AppointmentsScreen() {
         <ScreenHeader
           title="Minhas Consultas"
           buttonLabel="Agendar"
-          onButtonPress={() => alert('Agendar nova consulta')}
+          onButtonPress={() => router.push('/appointments/add' as any)}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
@@ -81,7 +86,7 @@ export default function AppointmentsScreen() {
       <ScreenHeader
         title="Minhas Consultas"
         buttonLabel="Agendar"
-        onButtonPress={() => alert('Agendar nova consulta')}
+        onButtonPress={() => router.push('/appointments/add' as any)}
       />
       <SectionList
         sections={APPOINTMENT_SECTIONS}
