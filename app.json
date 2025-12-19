@@ -17,11 +17,14 @@
       "bundleIdentifier": "com.mlluiz39.health-care-mobile"
     },
     "android": {
+      "package": "com.mlluiz39.health_care_mobile",
+      "permissions": [
+        "NOTIFICATIONS"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "package": "com.mlluiz39.health_care_mobile"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -30,7 +33,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true

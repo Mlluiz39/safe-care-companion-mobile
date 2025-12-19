@@ -59,9 +59,10 @@ export default function AddMedicationScreen() {
         // Schedule a notification for 5 seconds later as a demo logic
         // Real logic would parse 'frequency' to set actual intervals
         await scheduleMedicationNotification(
-          `Hora do Remédio: ${name}`,
-          `Tomar ${dosage} de ${currentPatient.name}`,
-          undefined // Immediate for demo
+          'temp-id', // Placeholder ID as addMedication doesn't return it yet
+          name,
+          dosage,
+          '08:00' // Placeholder time
         )
       }
 

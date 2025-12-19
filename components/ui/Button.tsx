@@ -57,7 +57,7 @@ const Button = ({
       secondary: { backgroundColor: colors.secondary.DEFAULT },
     }
 
-    return [baseStyle, sizeStyles[size], variantStyles[variant], style]
+    return [baseStyle, sizeStyles[size], variantStyles[variant], style].filter(Boolean) as ViewStyle[]
   }
 
   const getTextStyle = (): TextStyle[] => {

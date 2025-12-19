@@ -36,7 +36,9 @@ export async function initNotifications() {
 
 /* ===========================
    PERMISSIONS
-=========================== */
+   =========================== */
+export const registerForPushNotificationsAsync = registerForLocalNotifications // Alias for compatibility
+
 export async function registerForLocalNotifications() {
     if (isExpoGoAndroid()) return
 
