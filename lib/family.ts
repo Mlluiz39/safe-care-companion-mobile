@@ -19,3 +19,28 @@ export async function addFamilyMember(member: {
 
     return data
 }
+
+export async function updateFamilyMember(id: string, updates: any) {
+    const { data, error } = await supabase
+        .from('family_members')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
+
+    if (error) {
+        throw new Error('Erro ao atualizar familiar: ' + error.message)
+    }
+    return data
+}
+
+export async function deleteFamilyMember(id: string) {
+    const { error } = await supabase
+        .from('family_members')
+        .delete()
+        .eq('id', id)
+
+    if (error) {
+        throw new Error('Erro ao excluir familiar: ' + error.message)
+    }
+}

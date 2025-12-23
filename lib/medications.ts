@@ -23,3 +23,30 @@ export async function addMedication(med: {
   console.log("✅ Medicamento inserido:", data);
   return data;
 }
+
+export async function updateMedication(id: string, updates: any) {
+  const { data, error } = await supabase
+    .from('medications')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Erro ao atualizar medicamento:', error)
+    throw error
+  }
+  return data
+}
+
+export async function deleteMedication(id: string) {
+  const { error } = await supabase
+    .from('medications')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    console.error('Erro ao excluir medicamento:', error)
+    throw error
+  }
+}

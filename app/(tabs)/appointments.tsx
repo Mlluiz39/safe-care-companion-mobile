@@ -93,7 +93,10 @@ export default function AppointmentsScreen() {
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
           <View style={styles.itemWrapper}>
-            <AppointmentListItem appointment={item} />
+            <AppointmentListItem
+              appointment={item}
+              onPress={() => router.push(`/appointments/${item.id}`)}
+            />
           </View>
         )}
         renderSectionHeader={({ section: { title } }) => (

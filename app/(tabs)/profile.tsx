@@ -1,8 +1,16 @@
-import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from 'react-native'
 import { useState, useEffect } from 'react'
 import * as ImagePicker from 'expo-image-picker'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
 import Button from '../../components/ui/Button'
 import { supabase } from '../../lib/supabase'
 import { colors, fontSize, fontWeight, spacing } from '../../constants/colors'
@@ -18,7 +26,9 @@ export default function ProfileScreen() {
 
   async function getProfile() {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) return
 
       const { data, error } = await supabase
@@ -27,7 +37,8 @@ export default function ProfileScreen() {
         .eq('id', user.id)
         .single()
 
-      if (error && error.code !== 'PGRST116') { // Ignore "no row found" error
+      if (error && error.code !== 'PGRST116') {
+        // Ignore "no row found" error
         console.warn(error)
       }
 
@@ -42,7 +53,9 @@ export default function ProfileScreen() {
 
   async function downloadImage(path: string) {
     try {
-      const { data, error } = await supabase.storage.from('avatars').download(path)
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .download(path)
       if (error) {
         throw error
       }
@@ -63,7 +76,7 @@ export default function ProfileScreen() {
       setUploading(true)
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 1,
@@ -77,7 +90,9 @@ export default function ProfileScreen() {
       const image = result.assets[0]
       if (!image.base64) return
 
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) throw new Error('No user on the session!')
 
       const filePath = `${user.id}/${new Date().getTime()}.png`
@@ -130,7 +145,11 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Perfil</Text>
         <TouchableOpacity onPress={() => supabase.auth.signOut()}>
-          <Ionicons name="log-out-outline" size={24} color={colors.primary.DEFAULT} />
+          <Ionicons
+            name="log-out-outline"
+            size={24}
+            color={colors.primary.DEFAULT}
+          />
         </TouchableOpacity>
       </View>
 
@@ -143,7 +162,11 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        <TouchableOpacity style={styles.cameraButton} onPress={uploadImage} disabled={uploading}>
+        <TouchableOpacity
+          style={styles.cameraButton}
+          onPress={uploadImage}
+          disabled={uploading}
+        >
           {uploading ? (
             <ActivityIndicator size="small" color="white" />
           ) : (

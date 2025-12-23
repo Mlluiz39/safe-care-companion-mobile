@@ -60,7 +60,12 @@ export default function FamilyScreen() {
       />
       <FlatList
         data={familyMembers}
-        renderItem={({ item }) => <FamilyMemberCard member={item} />}
+        renderItem={({ item }) => (
+          <FamilyMemberCard
+            member={item}
+            onPress={() => router.push(`/family/${item.id}` as any)}
+          />
+        )}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={() => <View style={styles.separator} />}

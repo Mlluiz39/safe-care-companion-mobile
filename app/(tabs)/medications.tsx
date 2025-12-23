@@ -67,7 +67,12 @@ export default function MedicationsScreen() {
       />
       <FlatList
         data={medications}
-        renderItem={({ item }) => <MedicationListItem medication={item} />}
+        renderItem={({ item }) => (
+          <MedicationListItem
+            medication={item}
+            onPress={() => router.push(`/medications/${item.id}`)}
+          />
+        )}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={() => <View style={styles.separator} />}

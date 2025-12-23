@@ -6,6 +6,7 @@ import {
   Pressable,
   ActivityIndicator,
   StyleSheet,
+  Alert,
 } from 'react-native'
 import { supabase } from '../lib/supabase'
 import { Ionicons } from '@expo/vector-icons';
@@ -27,7 +28,7 @@ export default function AuthScreen() {
 
   async function signInWithEmail() {
     if (!email || !password || (isSignUp && !name)) { // Validate name on sign up
-      alert('Por favor, preencha todos os campos.')
+      Alert.alert('Atenção', 'Por favor, preencha todos os campos.')
       return
     }
 
@@ -46,9 +47,9 @@ export default function AuthScreen() {
       })
 
       if (error) {
-        alert(error.message)
+        Alert.alert('Erro', error.message)
       } else {
-        alert('Conta criada com sucesso! Verifique seu email para confirmar.')
+        Alert.alert('Sucesso', 'Conta criada com sucesso! Verifique seu email para confirmar.')
       }
     } else {
       // Login
@@ -58,7 +59,7 @@ export default function AuthScreen() {
       })
 
       if (error) {
-        alert(error.message)
+        Alert.alert('Erro', error.message)
       }
     }
 

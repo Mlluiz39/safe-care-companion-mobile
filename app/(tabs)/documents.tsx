@@ -73,7 +73,12 @@ export default function DocumentsScreen() {
       />
       <FlatList
         data={documents}
-        renderItem={({ item }) => <DocumentGridItem document={item} />}
+        renderItem={({ item }) => (
+          <DocumentGridItem
+            document={item}
+            onPress={() => router.push(`/documents/${item.id}` as any)}
+          />
+        )}
         keyExtractor={item => item.id}
         numColumns={2}
         contentContainerStyle={styles.listContent}

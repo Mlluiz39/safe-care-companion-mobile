@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../ui/Card'
 import { Appointment } from '../../types'
@@ -14,51 +14,55 @@ import {
 
 type AppointmentListItemProps = {
   appointment: Appointment
+  onPress?: () => void
 }
 
 export default function AppointmentListItem({
   appointment,
+  onPress,
 }: AppointmentListItemProps) {
   const appointmentDate = new Date(appointment.date)
   const formattedTime = format(appointmentDate, 'HH:mm')
 
   return (
-    <Card style={styles.card}>
-      <View style={styles.header}>
-        <View style={styles.leftSection}>
-          <Text style={styles.specialty}>
-            {appointment.specialty.charAt(0).toUpperCase() +
-              appointment.specialty.slice(1).toLowerCase()}
-          </Text>
-          <Text style={styles.doctor}>{appointment.doctor}</Text>
-          {appointment.patient && (
-            <Text style={styles.patient}>
-              Paciente: {appointment.patient.name}
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <Card style={styles.card}>
+        <View style={styles.header}>
+          <View style={styles.leftSection}>
+            <Text style={styles.specialty}>
+              {appointment.specialty.charAt(0).toUpperCase() +
+                appointment.specialty.slice(1).toLowerCase()}
             </Text>
-          )}
-        </View>
-        <View style={styles.rightSection}>
-          <Text style={styles.time}>{formattedTime}</Text>
-          <Text style={styles.date}>
-            {format(appointmentDate, 'dd/MM/yy')}
-          </Text>
-        </View>
-      </View>
-      {appointment.location && (
-        <>
-          <View style={styles.divider} />
-          <View style={styles.locationContainer}>
-            <Ionicons
-              name="location-outline"
-              size={16}
-              color={colors.muted.foreground}
-              style={styles.locationIcon}
-            />
-            <Text style={styles.location}>{appointment.location}</Text>
+            <Text style={styles.doctor}>{appointment.doctor}</Text>
+            {appointment.patient && (
+              <Text style={styles.patient}>
+                Paciente: {appointment.patient.name}
+              </Text>
+            )}
           </View>
-        </>
-      )}
-    </Card>
+          <View style={styles.rightSection}>
+            <Text style={styles.time}>{formattedTime}</Text>
+            <Text style={styles.date}>
+              {format(appointmentDate, 'dd/MM/yy')}
+            </Text>
+          </View>
+        </View>
+        {appointment.location && (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.locationContainer}>
+              <Ionicons
+                name="location-outline"
+                size={16}
+                color={colors.muted.foreground}
+                style={styles.locationIcon}
+              />
+              <Text style={styles.location}>{appointment.location}</Text>
+            </View>
+          </>
+        )}
+      </Card>
+    </TouchableOpacity>
   )
 }
 

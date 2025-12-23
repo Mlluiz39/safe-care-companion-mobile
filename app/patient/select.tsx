@@ -62,7 +62,7 @@ export default function SelectPatientScreen() {
 
             if (joinError) throw joinError
 
-            Alert.alert('Sucesso', 'Você agora faz parte da equipe de cuidados!')
+            Alert.alert('Sucesso', 'Você agora faz parte da equipe de cuidadores!')
             setShowJoinModal(false)
             setInviteCode('')
             refreshPatients()
