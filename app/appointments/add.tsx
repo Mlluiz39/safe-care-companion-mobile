@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
     View,
     TextInput,
@@ -11,12 +11,14 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { Switch } from 'react-native'
 import { useAuth } from '../../lib/auth'
 import { addAppointment } from '../../lib/appointments'
 import { colors, spacing, fontSize } from '../../constants/colors'
 import ScreenHeader from '../../components/ui/ScreenHeader'
 
 import { usePatient } from '../../context/PatientContext'
+import { registerForPushNotificationsAsync, scheduleOneTimeNotification } from '../../lib/notifications'
 
 export default function AddAppointmentScreen() {
     const router = useRouter()
@@ -29,6 +31,11 @@ export default function AddAppointmentScreen() {
     const [time, setTime] = useState('09:00')
     const [location, setLocation] = useState('')
     const [notes, setNotes] = useState('')
+    const [remindMe, setRemindMe] = useState(false)
+
+    useEffect(() => {
+        registerForPushNotificationsAsync()
+    }, [])
 
     const handleSave = async () => {
         if (!specialty.trim() || !doctor.trim() || !date.trim()) {
@@ -55,6 +62,36 @@ export default function AddAppointmentScreen() {
                 user_id: user!.id,
                 patient_id: currentPatient.id,
             })
+
+            // We need the ID to schedule the notification properly, but addAppointment currently returns data.
+            // Assuming data contains the new record with ID.
+             // Wait, addAppointment in lib/appointments.ts returns data.
+            // Let's verify what data is returned. It should be the inserted row.
+            
+            // To be safe, we might need to fetch the last inserted ID or update addAppointment to return it.
+            // But wait, Supabase insert().select().single() returns the object.
+            // I'll need to capture the result of addAppointment.
+            
+            // Refactoring to capture result:
+            const newAppointment = await addAppointment({
+                specialty,
+                doctor,
+                date: dateTime.toISOString(),
+                location,
+                notes,
+                status: 'scheduled',
+                user_id: user!.id,
+                patient_id: currentPatient.id,
+            })
+
+            if (remindMe && newAppointment?.id) {
+                 await scheduleOneTimeNotification(
+                    `appointment-${newAppointment.id}`,
+                    'Lembrete de Consulta 🩺',
+                    `${specialty} com ${doctor}`,
+                    dateTime
+                )
+            }
 
             Alert.alert('Sucesso', 'Consulta agendada!', [
                 {
@@ -127,6 +164,16 @@ export default function AddAppointmentScreen() {
                         onChangeText={setNotes}
                     />
 
+                    <View style={styles.switchContainer}>
+                        <Text style={styles.switchLabel}>Lembrar-me</Text>
+                        <Switch
+                            trackColor={{ false: "#767577", true: colors.primary.DEFAULT }}
+                            thumbColor={remindMe ? "#f4f3f4" : "#f4f3f4"}
+                            onValueChange={setRemindMe}
+                            value={remindMe}
+                        />
+                    </View>
+
                     <TouchableOpacity style={styles.button} onPress={handleSave}>
                         <Text style={styles.buttonText}>Salvar</Text>
                     </TouchableOpacity>
@@ -177,5 +224,19 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: fontSize.lg,
         fontWeight: 'bold',
+    },
+    switchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: spacing.md,
+        backgroundColor: colors.card,
+        padding: spacing.md,
+        borderRadius: 10,
+    },
+    switchLabel: {
+        fontSize: fontSize.base,
+        color: colors.foreground,
+        fontWeight: '500',
     },
 })

@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'Cuidado com a Saúde'
+rootProject.name = 'health-care-mobile'
 
 dependencyResolutionManagement {
   versionCatalogs {

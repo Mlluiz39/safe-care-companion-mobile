@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
     View,
     TextInput,
@@ -11,12 +11,14 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { Switch } from 'react-native'
 import { useAuth } from '../../lib/auth'
 import { addDocument } from '../../lib/documents'
 import { colors, spacing, fontSize } from '../../constants/colors'
 import ScreenHeader from '../../components/ui/ScreenHeader'
 
 import { usePatient } from '../../context/PatientContext'
+import { registerForPushNotificationsAsync, scheduleOneTimeNotification } from '../../lib/notifications'
 
 export default function AddDocumentScreen() {
     const router = useRouter()
@@ -26,7 +28,13 @@ export default function AddDocumentScreen() {
     const [title, setTitle] = useState('')
     const [type, setType] = useState('Exame de Sangue') // Default
     const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+    const [time, setTime] = useState('08:00')
     const [notes, setNotes] = useState('')
+    const [remindMe, setRemindMe] = useState(false)
+
+    useEffect(() => {
+        registerForPushNotificationsAsync()
+    }, [])
 
     const addToGoogleCalendar = (dateStr: string) => {
         const dateObj = new Date(dateStr)
@@ -49,14 +57,25 @@ export default function AddDocumentScreen() {
         }
 
         try {
-            await addDocument({
+            const dateTime = new Date(`${date}T${time}:00`)
+
+            const newDoc = await addDocument({
                 title,
                 type,
-                date: new Date(date).toISOString(),
+                date: dateTime.toISOString(),
                 notes,
                 user_id: user!.id,
                 patient_id: currentPatient.id,
             })
+
+            if (remindMe && newDoc?.id) {
+                await scheduleOneTimeNotification(
+                    `document-${newDoc.id}`,
+                    'Lembrete de Exame 📄',
+                    `${title} (${type})`,
+                    dateTime
+                )
+            }
 
             Alert.alert('Sucesso', 'Documento adicionado!', [
                 {
@@ -90,12 +109,20 @@ export default function AddDocumentScreen() {
                         onChangeText={setType}
                     />
 
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Data (YYYY-MM-DD)"
-                        value={date}
-                        onChangeText={setDate}
-                    />
+                    <View style={styles.row}>
+                        <TextInput
+                            style={[styles.input, styles.halfInput]}
+                            placeholder="Data (YYYY-MM-DD)"
+                            value={date}
+                            onChangeText={setDate}
+                        />
+                         <TextInput
+                            style={[styles.input, styles.halfInput]}
+                            placeholder="Hora (HH:MM)"
+                            value={time}
+                            onChangeText={setTime}
+                        />
+                    </View>
 
                     <TextInput
                         style={[styles.input, styles.largeInput]}
@@ -104,6 +131,16 @@ export default function AddDocumentScreen() {
                         value={notes}
                         onChangeText={setNotes}
                     />
+
+                    <View style={styles.switchContainer}>
+                        <Text style={styles.switchLabel}>Lembrar-me</Text>
+                        <Switch
+                            trackColor={{ false: "#767577", true: colors.primary.DEFAULT }}
+                            thumbColor={remindMe ? "#f4f3f4" : "#f4f3f4"}
+                            onValueChange={setRemindMe}
+                            value={remindMe}
+                        />
+                    </View>
 
                     <TouchableOpacity style={styles.button} onPress={handleSave}>
                         <Text style={styles.buttonText}>Salvar</Text>
@@ -151,5 +188,26 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: fontSize.lg,
         fontWeight: 'bold',
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    halfInput: {
+        width: '48%',
+    },
+    switchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: spacing.md,
+        backgroundColor: colors.card,
+        padding: spacing.md,
+        borderRadius: 10,
+    },
+    switchLabel: {
+        fontSize: fontSize.base,
+        color: colors.foreground,
+        fontWeight: '500',
     },
 })

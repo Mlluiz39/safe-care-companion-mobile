@@ -7,6 +7,7 @@ export interface Patient {
   phone?: string
   email?: string
   address?: string
+  invite_code?: string
   created_at: string
   updated_at: string
 }

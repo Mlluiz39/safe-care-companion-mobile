@@ -105,6 +105,8 @@ export async function scheduleMedicationNotification(
     }
 }
 
+
+
 /* ===========================
    CANCEL
 =========================== */
@@ -129,4 +131,46 @@ export async function cancelAllMedicationNotifications() {
 
     const Notifications = await import('expo-notifications')
     await Notifications.cancelAllScheduledNotificationsAsync()
+}
+
+export async function scheduleOneTimeNotification(
+    id: string,
+    title: string,
+    body: string,
+    date: Date
+) {
+    if (isExpoGoAndroid()) return false
+
+    try {
+        const Notifications = await import('expo-notifications')
+
+        await Notifications.scheduleNotificationAsync({
+            identifier: id,
+            content: {
+                title,
+                body,
+                sound: 'default',
+            },
+            trigger: {
+                type: 'date',
+                date,
+            } as unknown as ExpoNotifications.DateTriggerInput,
+        })
+
+        return true
+    } catch (error) {
+        console.error('Erro ao agendar notificação única:', error)
+        return false
+    }
+}
+
+export async function cancelNotification(identifier: string) {
+    if (isExpoGoAndroid()) return
+
+    try {
+        const Notifications = await import('expo-notifications')
+        await Notifications.cancelScheduledNotificationAsync(identifier)
+    } catch (error) {
+        console.error('Erro ao cancelar notificação:', error)
+    }
 }

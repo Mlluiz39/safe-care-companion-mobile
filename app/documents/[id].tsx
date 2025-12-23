@@ -8,11 +8,13 @@ import {
     StyleSheet,
     ScrollView,
     Linking,
+    Switch,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useAuth } from '../../lib/auth'
 import { updateDocument, deleteDocument } from '../../lib/documents'
+import { cancelNotification, scheduleOneTimeNotification, registerForPushNotificationsAsync } from '../../lib/notifications'
 import { colors, spacing, fontSize } from '../../constants/colors'
 import ScreenHeader from '../../components/ui/ScreenHeader'
 import { supabase } from '../../lib/supabase'
@@ -25,7 +27,13 @@ export default function EditDocumentScreen() {
     const [title, setTitle] = useState('')
     const [type, setType] = useState('')
     const [date, setDate] = useState('')
+    const [time, setTime] = useState('')
     const [notes, setNotes] = useState('')
+    const [remindMe, setRemindMe] = useState(false)
+
+    useEffect(() => {
+        registerForPushNotificationsAsync()
+    }, [])
 
     useEffect(() => {
         fetchDocument()
@@ -43,7 +51,9 @@ export default function EditDocumentScreen() {
 
             setTitle(data.title)
             setType(data.type)
-            setDate(new Date(data.date).toISOString().split('T')[0])
+            const dateObj = new Date(data.date)
+            setDate(dateObj.toISOString().split('T')[0])
+            setTime(dateObj.toISOString().split('T')[1].substring(0, 5)) // HH:MM
             setNotes(data.notes || '')
         } catch (error) {
             console.error('Error fetching document:', error)
@@ -70,12 +80,23 @@ export default function EditDocumentScreen() {
         }
 
         try {
+            const dateTime = new Date(`${date}T${time}:00`)
+
             await updateDocument(id as string, {
                 title,
                 type,
-                date: new Date(date).toISOString(),
+                date: dateTime.toISOString(),
                 notes,
             })
+
+            if (remindMe) {
+                 await scheduleOneTimeNotification(
+                    `document-${id}`,
+                    'Lembrete de Exame 📄',
+                    `${title} (${type})`,
+                    dateTime
+                )
+            }
 
             Alert.alert('Sucesso', 'Documento atualizado!', [
                 {
@@ -100,6 +121,7 @@ export default function EditDocumentScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
+                            await cancelNotification(`document-${id}`)
                             await deleteDocument(id as string)
                             router.back()
                         } catch (e: any) {
@@ -133,12 +155,20 @@ export default function EditDocumentScreen() {
                         onChangeText={setType}
                     />
 
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Data (YYYY-MM-DD)"
-                        value={date}
-                        onChangeText={setDate}
-                    />
+                    <View style={styles.row}>
+                        <TextInput
+                            style={[styles.input, styles.halfInput]}
+                            placeholder="Data (YYYY-MM-DD)"
+                            value={date}
+                            onChangeText={setDate}
+                        />
+                         <TextInput
+                            style={[styles.input, styles.halfInput]}
+                            placeholder="Hora (HH:MM)"
+                            value={time}
+                            onChangeText={setTime}
+                        />
+                    </View>
 
                     <TextInput
                         style={[styles.input, styles.largeInput]}
@@ -147,6 +177,16 @@ export default function EditDocumentScreen() {
                         value={notes}
                         onChangeText={setNotes}
                     />
+
+                    <View style={styles.switchContainer}>
+                        <Text style={styles.switchLabel}>Atualizar Lembrete</Text>
+                        <Switch
+                            trackColor={{ false: "#767577", true: colors.primary.DEFAULT }}
+                            thumbColor={remindMe ? "#f4f3f4" : "#f4f3f4"}
+                            onValueChange={setRemindMe}
+                            value={remindMe}
+                        />
+                    </View>
 
                     <TouchableOpacity style={styles.button} onPress={handleUpdate}>
                         <Text style={styles.buttonText}>Salvar Alterações</Text>
@@ -207,5 +247,26 @@ const styles = StyleSheet.create({
     },
     deleteButtonText: {
         color: colors.destructive.DEFAULT,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    halfInput: {
+        width: '48%',
+    },
+    switchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: spacing.md,
+        backgroundColor: colors.card,
+        padding: spacing.md,
+        borderRadius: 10,
+    },
+    switchLabel: {
+        fontSize: fontSize.base,
+        color: colors.foreground,
+        fontWeight: '500',
     },
 })

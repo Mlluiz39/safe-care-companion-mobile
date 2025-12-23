@@ -28,6 +28,7 @@ export default function AddMedicationScreen() {
   const [frequency, setFrequency] = useState('')
   const [description, setDescription] = useState('')
   const [remindMe, setRemindMe] = useState(false)
+  const [time, setTime] = useState('08:00')
 
   useEffect(() => {
     registerForPushNotificationsAsync()
@@ -62,7 +63,7 @@ export default function AddMedicationScreen() {
           'temp-id', // Placeholder ID as addMedication doesn't return it yet
           name,
           dosage,
-          '08:00' // Placeholder time
+          time
         )
       }
 
@@ -97,6 +98,15 @@ export default function AddMedicationScreen() {
           placeholder="Frequência (ex: 8 em 8 horas)"
           value={frequency}
           onChangeText={setFrequency}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Horário do Alarme (HH:MM)"
+          value={time}
+          onChangeText={setTime}
+          maxLength={5}
+          keyboardType="numbers-and-punctuation"
         />
 
         <TextInput
