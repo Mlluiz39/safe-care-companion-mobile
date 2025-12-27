@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   ScrollView,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import * as Speech from 'expo-speech'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../constants/colors'
 
 interface DateTimePickerProps {
@@ -15,16 +17,81 @@ interface DateTimePickerProps {
   onChange: (date: Date) => void
   mode?: 'date' | 'time' | 'datetime'
   label?: string
+  enableVoice?: boolean
+  showQuickActions?: boolean
 }
+
+const STORAGE_KEY = '@frequent_times'
+const PRESET_TIMES = [
+  { label: '8h', hours: 8, minutes: 0 },
+  { label: '12h', hours: 12, minutes: 0 },
+  { label: '18h', hours: 18, minutes: 0 },
+  { label: '20h', hours: 20, minutes: 0 },
+]
 
 export default function DateTimePicker({
   value,
   onChange,
   mode = 'datetime',
   label,
+  enableVoice = true,
+  showQuickActions = true,
 }: DateTimePickerProps) {
   const [showPicker, setShowPicker] = useState(false)
   const [tempDate, setTempDate] = useState(value)
+  const [frequentTimes, setFrequentTimes] = useState<string[]>([])
+
+  useEffect(() => {
+    loadFrequentTimes()
+  }, [])
+
+  const loadFrequentTimes = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        setFrequentTimes(JSON.parse(stored))
+      }
+    } catch (error) {
+      console.error('Error loading frequent times:', error)
+    }
+  }
+
+  const saveFrequentTime = async (time: string) => {
+    try {
+      const updated = [time, ...frequentTimes.filter(t => t !== time)].slice(0, 3)
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      setFrequentTimes(updated)
+    } catch (error) {
+      console.error('Error saving frequent time:', error)
+    }
+  }
+
+  const speakDateTime = (date: Date) => {
+    if (!enableVoice) return
+
+    let text = ''
+    if (mode === 'date' || mode === 'datetime') {
+      const day = date.getDate()
+      const month = date.toLocaleDateString('pt-BR', { month: 'long' })
+      const year = date.getFullYear()
+      text += `${day} de ${month} de ${year}`
+    }
+    if (mode === 'datetime') text += ', às '
+    if (mode === 'time' || mode === 'datetime') {
+      const hours = date.getHours()
+      const minutes = date.getMinutes()
+      text += `${hours} horas`
+      if (minutes > 0) text += ` e ${minutes} minutos`
+    }
+
+    Speech.speak(text, { language: 'pt-BR', rate: 0.85 })
+  }
+
+  const playSound = () => {
+    if (enableVoice) {
+      Speech.speak('', { language: 'pt-BR' }) // Quick beep effect
+    }
+  }
 
   const formatDate = (date: Date) => {
     const day = date.getDate().toString().padStart(2, '0')
@@ -47,6 +114,10 @@ export default function DateTimePicker({
 
   const handleConfirm = () => {
     onChange(tempDate)
+    if (mode === 'time' || mode === 'datetime') {
+      saveFrequentTime(formatTime(tempDate))
+    }
+    speakDateTime(tempDate)
     setShowPicker(false)
   }
 
@@ -55,12 +126,40 @@ export default function DateTimePicker({
     setShowPicker(false)
   }
 
+  const setToday = () => {
+    const today = new Date()
+    today.setHours(tempDate.getHours(), tempDate.getMinutes(), 0, 0)
+    setTempDate(today)
+    playSound()
+  }
+
+  const setTomorrow = () => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(tempDate.getHours(), tempDate.getMinutes(), 0, 0)
+    setTempDate(tomorrow)
+    playSound()
+  }
+
+  const setPresetTime = (hours: number, minutes: number) => {
+    const newDate = new Date(tempDate)
+    newDate.setHours(hours, minutes, 0, 0)
+    setTempDate(newDate)
+    playSound()
+  }
+
+  const setFrequentTime = (timeStr: string) => {
+    const [hours, minutes] = timeStr.split(':').map(Number)
+    setPresetTime(hours, minutes)
+  }
+
   const adjustDate = (field: 'day' | 'month' | 'year', delta: number) => {
     const newDate = new Date(tempDate)
     if (field === 'day') newDate.setDate(newDate.getDate() + delta)
     if (field === 'month') newDate.setMonth(newDate.getMonth() + delta)
     if (field === 'year') newDate.setFullYear(newDate.getFullYear() + delta)
     setTempDate(newDate)
+    playSound()
   }
 
   const adjustTime = (field: 'hour' | 'minute', delta: number) => {
@@ -68,6 +167,68 @@ export default function DateTimePicker({
     if (field === 'hour') newDate.setHours(newDate.getHours() + delta)
     if (field === 'minute') newDate.setMinutes(newDate.getMinutes() + delta)
     setTempDate(newDate)
+    playSound()
+  }
+
+  const renderQuickDateActions = () => {
+    if (!showQuickActions || mode === 'time') return null
+
+    return (
+      <View style={styles.quickActionsSection}>
+        <Text style={styles.quickActionsTitle}>Atalhos Rápidos</Text>
+        <View style={styles.quickActionsRow}>
+          <TouchableOpacity style={styles.quickActionButton} onPress={setToday}>
+            <Ionicons name="today-outline" size={20} color={colors.primary.DEFAULT} />
+            <Text style={styles.quickActionText}>Hoje</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickActionButton} onPress={setTomorrow}>
+            <Ionicons name="calendar-outline" size={20} color={colors.primary.DEFAULT} />
+            <Text style={styles.quickActionText}>Amanhã</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    )
+  }
+
+  const renderQuickTimeActions = () => {
+    if (!showQuickActions || mode === 'date') return null
+
+    return (
+      <View style={styles.quickActionsSection}>
+        <Text style={styles.quickActionsTitle}>Horários Comuns</Text>
+        <View style={styles.quickActionsGrid}>
+          {PRESET_TIMES.map((preset) => (
+            <TouchableOpacity
+              key={preset.label}
+              style={styles.quickTimeButton}
+              onPress={() => setPresetTime(preset.hours, preset.minutes)}
+            >
+              <Text style={styles.quickTimeText}>{preset.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        
+        {frequentTimes.length > 0 && (
+          <>
+            <Text style={[styles.quickActionsTitle, { marginTop: spacing.md }]}>
+              Horários Frequentes
+            </Text>
+            <View style={styles.quickActionsGrid}>
+              {frequentTimes.map((time, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[styles.quickTimeButton, styles.frequentTimeButton]}
+                  onPress={() => setFrequentTime(time)}
+                >
+                  <Ionicons name="time" size={16} color={colors.secondary.DEFAULT} />
+                  <Text style={styles.quickTimeText}>{time}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
+      </View>
+    )
   }
 
   const renderDatePicker = () => (
@@ -218,9 +379,19 @@ export default function DateTimePicker({
               <Text style={styles.modalTitle}>
                 {mode === 'date' ? 'Selecionar Data' : mode === 'time' ? 'Selecionar Horário' : 'Selecionar Data e Hora'}
               </Text>
+              {enableVoice && (
+                <TouchableOpacity
+                  style={styles.voiceButton}
+                  onPress={() => speakDateTime(tempDate)}
+                >
+                  <Ionicons name="volume-high" size={24} color={colors.primary.DEFAULT} />
+                </TouchableOpacity>
+              )}
             </View>
 
             <ScrollView style={styles.pickerContainer}>
+              {renderQuickDateActions()}
+              {renderQuickTimeActions()}
               {(mode === 'date' || mode === 'datetime') && renderDatePicker()}
               {(mode === 'time' || mode === 'datetime') && renderTimePicker()}
             </ScrollView>
@@ -281,21 +452,82 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopLeftRadius: borderRadius['2xl'],
     borderTopRightRadius: borderRadius['2xl'],
-    maxHeight: '80%',
+    maxHeight: '85%',
   },
   modalHeader: {
     padding: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalTitle: {
     fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
     color: colors.foreground,
     textAlign: 'center',
+    flex: 1,
+  },
+  voiceButton: {
+    padding: spacing.sm,
   },
   pickerContainer: {
     padding: spacing.lg,
+  },
+  quickActionsSection: {
+    marginBottom: spacing.xl,
+  },
+  quickActionsTitle: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.muted.foreground,
+    marginBottom: spacing.sm,
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  quickActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.card,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary.DEFAULT,
+  },
+  quickActionText: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.primary.DEFAULT,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  quickTimeButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.primary.DEFAULT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  frequentTimeButton: {
+    borderColor: colors.secondary.DEFAULT,
+  },
+  quickTimeText: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.foreground,
   },
   pickerSection: {
     marginBottom: spacing.xl,
