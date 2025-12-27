@@ -8,14 +8,17 @@ import {
     Alert,
     TextInput,
     Modal,
+    ScrollView,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { Picker } from '@react-native-picker/picker'
 import { usePatient } from '../../context/PatientContext'
 import { useAuth } from '../../lib/auth'
 import { supabase } from '../../lib/supabase'
 import { colors, spacing, fontSize, borderRadius, colorsWithOpacity } from '../../constants/colors'
 import { Ionicons } from '@expo/vector-icons'
+import DateTimePicker from '../../components/ui/DateTimePicker'
 
 export default function SelectPatientScreen() {
     const router = useRouter()
@@ -26,7 +29,14 @@ export default function SelectPatientScreen() {
     const [inviteCode, setInviteCode] = useState('')
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [newPatientName, setNewPatientName] = useState('')
-    const [birthDate, setBirthDate] = useState('') // DD/MM/YYYY
+    const [birthDate, setBirthDate] = useState(() => {
+        const date = new Date()
+        date.setFullYear(date.getFullYear() - 70) // Default: 70 anos atrás
+        return date
+    })
+    const [gender, setGender] = useState('')
+    const [phone, setPhone] = useState('')
+    const [email, setEmail] = useState('')
     const [allergies, setAllergies] = useState('')
 
     const handleSelect = (patient: any) => {
@@ -74,28 +84,33 @@ export default function SelectPatientScreen() {
     const handleCreate = async () => {
         if (!newPatientName.trim()) return Alert.alert("Erro", "Nome é obrigatório");
 
-        // Simple date validation/conversion if needed. ensuring YYYY-MM-DD for Supabase date type
-        let formattedDate = null;
-        if (birthDate) {
-            const parts = birthDate.split('/');
-            if (parts.length === 3) {
-                formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-            }
+        // Validar email se fornecido
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return Alert.alert("Erro", "Email inválido");
         }
+
+        // Formatar data para YYYY-MM-DD
+        const formattedDate = birthDate.toISOString().split('T')[0];
 
         try {
             const { error } = await supabase.from('patients').insert({
                 name: newPatientName,
                 user_id: user!.id,
                 birth_date: formattedDate,
-                allergies: allergies
+                gender: gender || null,
+                phone: phone || null,
+                email: email || null,
+                allergies: allergies || null
             });
             if (error) throw error;
 
             Alert.alert("Sucesso", "Novo paciente criado!");
             setShowCreateModal(false);
             setNewPatientName("");
-            setBirthDate("");
+            setBirthDate(new Date(new Date().getFullYear() - 70, 0, 1));
+            setGender("");
+            setPhone("");
+            setEmail("");
             setAllergies("");
             refreshPatients();
         } catch (e: any) {
@@ -265,27 +280,62 @@ export default function SelectPatientScreen() {
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>Novo Paciente</Text>
 
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Nome do Paciente"
-                            value={newPatientName}
-                            onChangeText={setNewPatientName}
-                        />
+                        <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Nome do Paciente"
+                                value={newPatientName}
+                                onChangeText={setNewPatientName}
+                            />
 
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Data de Nascimento (DD/MM/AAAA)"
-                            value={birthDate}
-                            onChangeText={setBirthDate}
-                            keyboardType="numeric"
-                        />
+                            <DateTimePicker
+                                value={birthDate}
+                                onChange={setBirthDate}
+                                mode="date"
+                                label="Data de Nascimento"
+                                enableVoice={false}
+                                showQuickActions={false}
+                            />
 
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Alergias (separadas por vírgula)"
-                            value={allergies}
-                            onChangeText={setAllergies}
-                        />
+                            <View style={styles.pickerContainer}>
+                                <Text style={styles.pickerLabel}>Gênero</Text>
+                                <Picker
+                                    selectedValue={gender}
+                                    onValueChange={setGender}
+                                    style={styles.picker}
+                                >
+                                    <Picker.Item label="Selecione..." value="" />
+                                    <Picker.Item label="Masculino" value="male" />
+                                    <Picker.Item label="Feminino" value="female" />
+                                    <Picker.Item label="Outro" value="other" />
+                                    <Picker.Item label="Prefiro não informar" value="not_specified" />
+                                </Picker>
+                            </View>
+
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Telefone (opcional)"
+                                value={phone}
+                                onChangeText={setPhone}
+                                keyboardType="phone-pad"
+                            />
+
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Email (opcional)"
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                            />
+
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Alergias (separadas por vírgula)"
+                                value={allergies}
+                                onChangeText={setAllergies}
+                            />
+                        </ScrollView>
 
                         <TouchableOpacity style={styles.modalButton} onPress={handleCreate}>
                             <Text style={styles.modalButtonText}>Criar</Text>
@@ -397,7 +447,11 @@ const styles = StyleSheet.create({
     modalContent: {
         backgroundColor: colors.background,
         padding: spacing.lg,
-        borderRadius: borderRadius.xl
+        borderRadius: borderRadius.xl,
+        maxHeight: '80%',
+    },
+    formScroll: {
+        maxHeight: 400,
     },
     modalTitle: {
         fontSize: fontSize.xl,
@@ -414,7 +468,22 @@ const styles = StyleSheet.create({
         backgroundColor: colors.card,
         padding: spacing.md,
         borderRadius: borderRadius.md,
-        marginBottom: spacing.md
+        marginBottom: spacing.md,
+        color: colors.foreground,
+    },
+    pickerContainer: {
+        marginBottom: spacing.md,
+    },
+    pickerLabel: {
+        fontSize: fontSize.base,
+        color: colors.foreground,
+        marginBottom: spacing.sm,
+        fontWeight: '500',
+    },
+    picker: {
+        backgroundColor: colors.card,
+        borderRadius: borderRadius.md,
+        color: colors.foreground,
     },
     modalButton: {
         backgroundColor: colors.primary.DEFAULT,

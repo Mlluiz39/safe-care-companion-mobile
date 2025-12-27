@@ -12,6 +12,7 @@
     "@expo/vector-icons": "~14.0.4",
     "@faker-js/faker": "^8.4.1",
     "@react-native-async-storage/async-storage": "1.23.1",
+    "@react-native-picker/picker": "2.9.0",
     "@supabase/supabase-js": "^2.45.4",
     "cli": "^1.0.1",
     "date-fns": "^3.6.0",
