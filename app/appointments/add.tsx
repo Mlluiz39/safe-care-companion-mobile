@@ -16,6 +16,8 @@ import { useAuth } from '../../lib/auth'
 import { addAppointment } from '../../lib/appointments'
 import { colors, spacing, fontSize } from '../../constants/colors'
 import ScreenHeader from '../../components/ui/ScreenHeader'
+import DateTimePicker from '../../components/ui/DateTimePicker'
+
 
 import { usePatient } from '../../context/PatientContext'
 import { registerForPushNotificationsAsync, scheduleOneTimeNotification } from '../../lib/notifications'
@@ -27,8 +29,11 @@ export default function AddAppointmentScreen() {
 
     const [specialty, setSpecialty] = useState('')
     const [doctor, setDoctor] = useState('')
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]) // YYYY-MM-DD
-    const [time, setTime] = useState('09:00')
+    const [dateTime, setDateTime] = useState(() => {
+        const now = new Date()
+        now.setHours(9, 0, 0, 0)
+        return now
+    })
     const [location, setLocation] = useState('')
     const [notes, setNotes] = useState('')
     const [remindMe, setRemindMe] = useState(false)
@@ -38,8 +43,8 @@ export default function AddAppointmentScreen() {
     }, [])
 
     const handleSave = async () => {
-        if (!specialty.trim() || !doctor.trim() || !date.trim()) {
-            Alert.alert('Erro', 'Especialidade, Médico e Data são obrigatórios.')
+        if (!specialty.trim() || !doctor.trim()) {
+            Alert.alert('Erro', 'Especialidade e Médico são obrigatórios.')
             return
         }
 
@@ -49,30 +54,6 @@ export default function AddAppointmentScreen() {
         }
 
         try {
-            // Basic date combination
-            const dateTime = new Date(`${date}T${time}:00`)
-
-            await addAppointment({
-                specialty,
-                doctor,
-                date: dateTime.toISOString(),
-                location,
-                notes,
-                status: 'scheduled',
-                user_id: user!.id,
-                patient_id: currentPatient.id,
-            })
-
-            // We need the ID to schedule the notification properly, but addAppointment currently returns data.
-            // Assuming data contains the new record with ID.
-             // Wait, addAppointment in lib/appointments.ts returns data.
-            // Let's verify what data is returned. It should be the inserted row.
-            
-            // To be safe, we might need to fetch the last inserted ID or update addAppointment to return it.
-            // But wait, Supabase insert().select().single() returns the object.
-            // I'll need to capture the result of addAppointment.
-            
-            // Refactoring to capture result:
             const newAppointment = await addAppointment({
                 specialty,
                 doctor,
@@ -134,20 +115,12 @@ export default function AddAppointmentScreen() {
                         onChangeText={setDoctor}
                     />
 
-                    <View style={styles.row}>
-                        <TextInput
-                            style={[styles.input, styles.halfInput]}
-                            placeholder="Data (YYYY-MM-DD)"
-                            value={date}
-                            onChangeText={setDate}
-                        />
-                        <TextInput
-                            style={[styles.input, styles.halfInput]}
-                            placeholder="Hora (HH:MM)"
-                            value={time}
-                            onChangeText={setTime}
-                        />
-                    </View>
+                    <DateTimePicker
+                        value={dateTime}
+                        onChange={setDateTime}
+                        mode="datetime"
+                        label="Data e Hora da Consulta"
+                    />
 
                     <TextInput
                         style={styles.input}

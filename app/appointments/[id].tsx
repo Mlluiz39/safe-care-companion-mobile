@@ -16,6 +16,7 @@ import { updateAppointment, deleteAppointment } from '../../lib/appointments'
 import { cancelNotification, scheduleOneTimeNotification, registerForPushNotificationsAsync } from '../../lib/notifications'
 import { colors, spacing, fontSize } from '../../constants/colors'
 import ScreenHeader from '../../components/ui/ScreenHeader'
+import DateTimePicker from '../../components/ui/DateTimePicker'
 import { supabase } from '../../lib/supabase'
 
 export default function EditAppointmentScreen() {
@@ -25,11 +26,10 @@ export default function EditAppointmentScreen() {
     const [loading, setLoading] = useState(true)
     const [specialty, setSpecialty] = useState('')
     const [doctor, setDoctor] = useState('')
-    const [date, setDate] = useState('')
-    const [time, setTime] = useState('')
+    const [dateTime, setDateTime] = useState(new Date())
     const [location, setLocation] = useState('')
     const [notes, setNotes] = useState('')
-    const [remindMe, setRemindMe] = useState(false) // Default off for edit, user must enable to reschedule
+    const [remindMe, setRemindMe] = useState(false)
 
     useEffect(() => {
         registerForPushNotificationsAsync()
@@ -51,11 +51,7 @@ export default function EditAppointmentScreen() {
 
             setSpecialty(data.specialty)
             setDoctor(data.doctor)
-            
-            const dateObj = new Date(data.date)
-            setDate(dateObj.toISOString().split('T')[0])
-            setTime(dateObj.toISOString().split('T')[1].substring(0, 5)) // HH:MM
-            
+            setDateTime(new Date(data.date))
             setLocation(data.location || '')
             setNotes(data.notes || '')
         } catch (error) {
@@ -68,14 +64,12 @@ export default function EditAppointmentScreen() {
     }
 
     const handleUpdate = async () => {
-        if (!specialty.trim() || !doctor.trim() || !date.trim()) {
-            Alert.alert('Erro', 'Especialidade, Médico e Data são obrigatórios.')
+        if (!specialty.trim() || !doctor.trim()) {
+            Alert.alert('Erro', 'Especialidade e Médico são obrigatórios.')
             return
         }
 
         try {
-            const dateTime = new Date(`${date}T${time || '00:00'}:00`)
-
             await updateAppointment(id as string, {
                 specialty,
                 doctor,
@@ -145,20 +139,12 @@ export default function EditAppointmentScreen() {
                         onChangeText={setDoctor}
                     />
 
-                    <View style={styles.row}>
-                        <TextInput
-                            style={[styles.input, styles.halfInput]}
-                            placeholder="Data (YYYY-MM-DD)"
-                            value={date}
-                            onChangeText={setDate}
-                        />
-                        <TextInput
-                            style={[styles.input, styles.halfInput]}
-                            placeholder="Hora (HH:MM)"
-                            value={time}
-                            onChangeText={setTime}
-                        />
-                    </View>
+                    <DateTimePicker
+                        value={dateTime}
+                        onChange={setDateTime}
+                        mode="datetime"
+                        label="Data e Hora da Consulta"
+                    />
 
                     <TextInput
                         style={styles.input}

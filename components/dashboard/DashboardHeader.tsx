@@ -1,5 +1,4 @@
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native'
-import { useState, useCallback } from 'react'
 import { useFocusEffect } from 'expo-router'
 import {
   colors,
@@ -16,43 +15,14 @@ import { useRouter } from 'expo-router'
 
 export default function DashboardHeader() {
   const { currentPatient } = usePatient()
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const router = useRouter()
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
   // Get user name from metadata or fallback to email
-  const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'
+  const userName = profile?.username || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'
   const patientName = currentPatient?.name || 'Selecione'
+  const avatarUrl = profile?.avatar_url
 
-  useFocusEffect(
-    useCallback(() => {
-      if (user) {
-        fetchAvatar()
-      }
-    }, [user])
-  )
-
-  const fetchAvatar = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('avatar_url')
-        .eq('id', user!.id)
-        .single()
-
-      if (data?.avatar_url) {
-        const { data: imageData } = await supabase.storage
-          .from('avatars')
-          .createSignedUrl(data.avatar_url, 3600) // Create signed URL valid for 1 hour
-
-        if (imageData?.signedUrl) {
-          setAvatarUrl(imageData.signedUrl)
-        }
-      }
-    } catch (error) {
-      console.log('Error fetching avatar:', error)
-    }
-  }
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut()
@@ -67,11 +37,13 @@ export default function DashboardHeader() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={handleSwitchPatient}>
+      <TouchableOpacity onPress={handleSwitchPatient} style={styles.leftSection}>
         <View>
-          <Text style={styles.greeting}>Olá, {userName}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-            <Text style={styles.subtitle}>Cuidando de: <Text style={{ fontWeight: 'bold', color: colors.primary.DEFAULT }}>{patientName}</Text></Text>
+          <Text style={styles.greeting} numberOfLines={1}>Olá, {userName}</Text>
+          <View style={styles.patientInfo}>
+            <Text style={styles.subtitle} numberOfLines={1}>
+              Cuidando de: <Text style={styles.patientName}>{patientName}</Text>
+            </Text>
             <Ionicons name="chevron-down" size={14} color={colors.muted.foreground} />
           </View>
         </View>
@@ -79,7 +51,7 @@ export default function DashboardHeader() {
 
       <View style={styles.rightSection}>
         <TouchableOpacity onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={28} color={colors.foreground} />
+          <Ionicons name="log-out-outline" size={24} color={colors.foreground} />
         </TouchableOpacity>
         <Image
           source={{ uri: avatarUrl || `https://i.pravatar.cc/150?u=${userName}` }}
@@ -95,24 +67,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.sm,
+  },
+  leftSection: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
   },
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
+    flexShrink: 0,
+  },
+  patientInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+    flexShrink: 1,
   },
   greeting: {
-    fontSize: fontSize['2xl'],
+    fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
     color: colors.foreground,
   },
   subtitle: {
-    fontSize: fontSize.base,
+    fontSize: fontSize.sm,
     color: colors.muted.foreground,
+    flexShrink: 1,
+  },
+  patientName: {
+    fontWeight: 'bold',
+    color: colors.primary.DEFAULT,
   },
   avatar: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
     borderRadius: borderRadius.full,
   },
 })

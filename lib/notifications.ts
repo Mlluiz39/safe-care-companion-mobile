@@ -48,7 +48,11 @@ export async function registerForLocalNotifications() {
         await Notifications.setNotificationChannelAsync('default', {
             name: 'Medicamentos',
             importance: Notifications.AndroidImportance.MAX,
-            vibrationPattern: [0, 250, 250, 250],
+            vibrationPattern: [0, 500, 500, 500], // Longer vibration pattern
+            sound: 'default',
+            enableVibrate: true,
+            enableLights: true,
+            lightColor: '#FF0000',
         })
     }
 

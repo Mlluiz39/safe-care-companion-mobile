@@ -75,7 +75,7 @@ export default function QuickMenu() {
                     ? 'document-text'
                     : 'people'
                 }
-                size={32}
+                size={28}
                 color={item.color}
               />
             </View>
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     width: '48%',
     backgroundColor: colors.card,
     borderRadius: borderRadius['2xl'],
-    padding: spacing.md,
+    padding: spacing.sm,
     marginBottom: spacing.md,
     alignItems: 'center',
     borderWidth: 1,
@@ -118,16 +118,16 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   iconContainer: {
-    width: 64,
-    height: 64,
+    width: 56,
+    height: 56,
     borderRadius: borderRadius.full,
     justifyContent: 'center',
     alignItems: 'center',
   },
   menuItemText: {
-    fontSize: fontSize.base,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     color: colors.foreground,
-    marginTop: 12,
+    marginTop: spacing.sm,
   },
 })

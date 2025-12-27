@@ -103,6 +103,81 @@ export default function SelectPatientScreen() {
         }
     }
 
+    const handleDelete = async (patient: any) => {
+        const isOwner = patient.user_id === user?.id
+        
+        console.log('[DELETE] Attempting to delete patient:', patient.id)
+        console.log('[DELETE] User ID:', user?.id)
+        console.log('[DELETE] Patient Owner ID:', patient.user_id)
+        console.log('[DELETE] Is Owner?', isOwner)
+
+        const title = isOwner ? 'Excluir Paciente' : 'Sair da Equipe'
+        const message = isOwner 
+            ? `Tem certeza que deseja excluir ${patient.name}? Todos os dados serão perdidos permanentemente.`
+            : `Tem certeza que deseja deixar de cuidar de ${patient.name}?`
+
+        Alert.alert(title, message, [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+                text: 'Confirmar',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        if (isOwner) {
+                            console.log('[DELETE] Executing owner delete on patients table...')
+                            const { error, count } = await supabase
+                                .from('patients')
+                                .delete({ count: 'exact' })
+                                .eq('id', patient.id)
+                            
+                            console.log('[DELETE] Result:', { error, count })
+
+                            if (error) {
+                                console.error('[DELETE] Supabase error:', error)
+                                throw error
+                            }
+
+                            if (count === 0) {
+                                throw new Error('Falha ao excluir. Verifique suas permissões ou se o item já foi removido.')
+                            }
+                            
+                            if (currentPatient?.id === patient.id) {
+                                setCurrentPatient(null)
+                            }
+                        } else {
+                            console.log('[DELETE] Executing caregiver delete (leave)...')
+                            const { error, count } = await supabase
+                                .from('caregivers')
+                                .delete({ count: 'exact' })
+                                .eq('patient_id', patient.id)
+                                .eq('user_id', user?.id)
+
+                            console.log('[DELETE] Result:', { error, count })
+
+                            if (error) {
+                                console.error('[DELETE] Supabase error:', error)
+                                throw error
+                            }
+
+                            if (count === 0) {
+                                throw new Error('Falha ao sair da equipe. Verifique suas permissões.')
+                            }
+                         
+                            if (currentPatient?.id === patient.id) {
+                                setCurrentPatient(null)
+                            }
+                        }
+                        console.log('[DELETE] Refreshing patients...')
+                        await refreshPatients()
+                    } catch (e: any) {
+                        console.error('[DELETE] Exception:', e)
+                        Alert.alert('Erro ao excluir', e.message || JSON.stringify(e))
+                    }
+                }
+            }
+        ])
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
@@ -125,12 +200,22 @@ export default function SelectPatientScreen() {
                         <View style={styles.avatar}>
                             <Ionicons name="person" size={24} color={colors.primary.DEFAULT} />
                         </View>
-                        <View>
+                        <View style={{ flex: 1 }}>
                             <Text style={styles.cardTitle}>{item.name}</Text>
-                            {/* <Text style={styles.cardCode}>Código: {item.invite_code}</Text> */}
                         </View>
+                        
+                        <TouchableOpacity 
+                            style={styles.deleteButton}
+                            onPress={() => handleDelete(item)}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                            <Ionicons name="trash-outline" size={20} color={colors.destructive.DEFAULT} />
+                        </TouchableOpacity>
+
                         {currentPatient?.id === item.id && (
-                            <Ionicons name="checkmark-circle" size={24} color={colors.primary.DEFAULT} style={{ marginLeft: 'auto' }} />
+                            <View style={styles.checkIcon}>
+                                <Ionicons name="checkmark-circle" size={24} color={colors.primary.DEFAULT} />
+                            </View>
                         )}
                     </TouchableOpacity>
                 )}
@@ -265,6 +350,13 @@ const styles = StyleSheet.create({
         fontSize: fontSize.lg,
         fontWeight: 'bold',
         color: colors.foreground
+    },
+    deleteButton: {
+        padding: spacing.sm,
+        marginRight: spacing.sm,
+    },
+    checkIcon: {
+        marginLeft: 'auto'
     },
     emptyText: {
         textAlign: 'center',

@@ -14,6 +14,7 @@ import { useAuth } from '../../lib/auth'
 import { addMedication } from '../../lib/medications'
 import { colors, spacing, fontSize } from '../../constants/colors'
 import ScreenHeader from '../../components/ui/ScreenHeader'
+import DateTimePicker from '../../components/ui/DateTimePicker'
 
 import { usePatient } from '../../context/PatientContext'
 import { registerForPushNotificationsAsync, scheduleMedicationNotification } from '../../lib/notifications'
@@ -28,7 +29,11 @@ export default function AddMedicationScreen() {
   const [frequency, setFrequency] = useState('')
   const [description, setDescription] = useState('')
   const [remindMe, setRemindMe] = useState(false)
-  const [time, setTime] = useState('08:00')
+  const [alarmTime, setAlarmTime] = useState(() => {
+    const now = new Date()
+    now.setHours(8, 0, 0, 0)
+    return now
+  })
 
   useEffect(() => {
     registerForPushNotificationsAsync()
@@ -57,13 +62,15 @@ export default function AddMedicationScreen() {
       })
 
       if (remindMe) {
-        // Schedule a notification for 5 seconds later as a demo logic
-        // Real logic would parse 'frequency' to set actual intervals
+        const hours = alarmTime.getHours().toString().padStart(2, '0')
+        const minutes = alarmTime.getMinutes().toString().padStart(2, '0')
+        const timeString = `${hours}:${minutes}`
+        
         await scheduleMedicationNotification(
-          'temp-id', // Placeholder ID as addMedication doesn't return it yet
+          'temp-id',
           name,
           dosage,
-          time
+          timeString
         )
       }
 
@@ -100,13 +107,11 @@ export default function AddMedicationScreen() {
           onChangeText={setFrequency}
         />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Horário do Alarme (HH:MM)"
-          value={time}
-          onChangeText={setTime}
-          maxLength={5}
-          keyboardType="numbers-and-punctuation"
+        <DateTimePicker
+          value={alarmTime}
+          onChange={setAlarmTime}
+          mode="time"
+          label="Horário do Alarme"
         />
 
         <TextInput
