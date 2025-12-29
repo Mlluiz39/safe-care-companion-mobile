@@ -6,10 +6,12 @@ import {
     TouchableOpacity,
     Alert,
     StyleSheet,
+    Share, // Added Share
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useAuth } from '../../lib/auth'
+import { supabase } from '../../lib/supabase' // Added supabase
 import { addFamilyMember } from '../../lib/family'
 import { colors, spacing, fontSize } from '../../constants/colors'
 import ScreenHeader from '../../components/ui/ScreenHeader'
@@ -36,6 +38,23 @@ export default function AddFamilyScreen() {
         }
 
         try {
+            // 1. Check or generate invite code
+            let inviteCode = currentPatient.invite_code
+
+            if (!inviteCode) {
+                // Generate simple 6-char code
+                inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+                
+                // Save code to patient
+                const { error: updateError } = await supabase
+                    .from('patients')
+                    .update({ invite_code: inviteCode })
+                    .eq('id', currentPatient.id)
+
+                if (updateError) throw updateError
+            }
+
+            // 2. Add family member
             await addFamilyMember({
                 name,
                 relationship,
@@ -44,9 +63,30 @@ export default function AddFamilyScreen() {
                 // avatar_url optional
             })
 
-            Alert.alert('Sucesso', 'Familiar adicionado!')
-            router.back()
+            // 3. Share the code
+            Alert.alert(
+                'Sucesso',
+                'Familiar adicionado! Compartilhe o código de acesso para que ele possa entrar na equipe.',
+                [
+                    {
+                        text: 'Compartilhar Código',
+                        onPress: async () => {
+                             await Share.share({
+                                message: `Olá! Estou convidando você para ajudar a cuidar de ${currentPatient.name} no app Health Care. \n\nUse o código de convite: *${inviteCode}* \n\nBaixe o app e entre em "Entrar com Código".`
+                            })
+                            router.back()
+                        }
+                    },
+                    {
+                        text: 'Fechar',
+                        style: 'cancel',
+                        onPress: () => router.back()
+                    }
+                ]
+            )
+            
         } catch (e: any) {
+            console.error(e)
             Alert.alert('Erro', e.message ?? 'Falha ao adicionar familiar.')
         }
     }

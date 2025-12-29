@@ -71,9 +71,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const getSession = async () => {
       try {
+        // Safe guard: force stop loading after 5 seconds
+        const timeout = setTimeout(() => {
+            if (isLoading) {
+                console.warn('Auth session request timed out, forcing app load')
+                setIsLoading(false)
+            }
+        }, 5000)
+
         const {
           data: { session },
         } = await supabase.auth.getSession()
+        
+        clearTimeout(timeout)
+        
         setSession(session)
         const currentUser = session?.user ?? null
         setUser(currentUser)

@@ -1,10 +1,5 @@
 import type * as ExpoNotifications from 'expo-notifications'
 import { Platform } from 'react-native'
-import Constants, { ExecutionEnvironment } from 'expo-constants'
-
-const isExpoGoAndroid = () =>
-    Platform.OS === 'android' &&
-    Constants.executionEnvironment === ExecutionEnvironment.StoreClient
 
 let handlerInitialized = false
 
@@ -12,7 +7,7 @@ let handlerInitialized = false
    INIT
 =========================== */
 export async function initNotifications() {
-    if (handlerInitialized || isExpoGoAndroid()) return
+    if (handlerInitialized) return
 
     try {
         const Notifications = await import('expo-notifications')
@@ -28,6 +23,17 @@ export async function initNotifications() {
             }),
         })
 
+        if (Platform.OS === 'android') {
+            await Notifications.setNotificationChannelAsync('default', {
+                name: 'Medicamentos',
+                importance: Notifications.AndroidImportance.MAX,
+                vibrationPattern: [0, 250, 250, 250],
+                lightColor: '#FF231F7C',
+                lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+                bypassDnd: true,
+            })
+        }
+
         handlerInitialized = true
     } catch (error) {
         console.warn('Failed to load expo-notifications:', error)
@@ -40,28 +46,18 @@ export async function initNotifications() {
 export const registerForPushNotificationsAsync = registerForLocalNotifications // Alias for compatibility
 
 export async function registerForLocalNotifications() {
-    if (isExpoGoAndroid()) return
-
     const Notifications = await import('expo-notifications')
 
-    if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('default', {
-            name: 'Medicamentos',
-            importance: Notifications.AndroidImportance.MAX,
-            vibrationPattern: [0, 500, 500, 500], // Longer vibration pattern
-            sound: 'default',
-            enableVibrate: true,
-            enableLights: true,
-            lightColor: '#FF0000',
-        })
+    const { status: existingStatus } = await Notifications.getPermissionsAsync()
+    let finalStatus = existingStatus
+    
+    if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync()
+        finalStatus = status
     }
-
-    const { status } = await Notifications.getPermissionsAsync()
-    if (status !== 'granted') {
-        const request = await Notifications.requestPermissionsAsync()
-        if (request.status !== 'granted') {
-            alert('Permissão para notificações é necessária!')
-        }
+    
+    if (finalStatus !== 'granted') {
+        alert('Permissão para notificações é necessária para o alarme funcionar!')
     }
 }
 
@@ -87,8 +83,6 @@ export async function scheduleMedicationNotification(
     dosage: string,
     time: string
 ) {
-    if (isExpoGoAndroid()) return false
-
     try {
         const Notifications = await import('expo-notifications')
 
@@ -115,8 +109,6 @@ export async function scheduleMedicationNotification(
    CANCEL
 =========================== */
 export async function cancelMedicationNotifications(medicationId: string) {
-    if (isExpoGoAndroid()) return
-
     const Notifications = await import('expo-notifications')
     const scheduled = await Notifications.getAllScheduledNotificationsAsync()
 
@@ -131,8 +123,6 @@ export async function cancelMedicationNotifications(medicationId: string) {
    FULL RESET (opcional)
 =========================== */
 export async function cancelAllMedicationNotifications() {
-    if (isExpoGoAndroid()) return
-
     const Notifications = await import('expo-notifications')
     await Notifications.cancelAllScheduledNotificationsAsync()
 }
@@ -143,8 +133,6 @@ export async function scheduleOneTimeNotification(
     body: string,
     date: Date
 ) {
-    if (isExpoGoAndroid()) return false
-
     try {
         const Notifications = await import('expo-notifications')
 
@@ -169,8 +157,6 @@ export async function scheduleOneTimeNotification(
 }
 
 export async function cancelNotification(identifier: string) {
-    if (isExpoGoAndroid()) return
-
     try {
         const Notifications = await import('expo-notifications')
         await Notifications.cancelScheduledNotificationAsync(identifier)

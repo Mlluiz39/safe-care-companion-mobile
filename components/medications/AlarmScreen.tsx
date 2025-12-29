@@ -18,8 +18,9 @@ export default function AlarmScreen({ visible, medicationName, dosage, onDismiss
   useEffect(() => {
     if (visible) {
       playAlarmSound()
-      // Vibrate continuously
-      Vibration.vibrate([1000, 1000], true) // Pattern: vibrate 1s, pause 1s, repeat
+      // Vibrate continuously in a pattern
+      const VIBRATION_PATTERN = [1000, 2000, 1000, 2000] // Vibrate 1s, Pause 2s (repeat handled by loop)
+      Vibration.vibrate(VIBRATION_PATTERN, true) 
     } else {
       stopAlarmSound()
       Vibration.cancel()
@@ -35,49 +36,30 @@ export default function AlarmScreen({ visible, medicationName, dosage, onDismiss
     try {
       await Audio.setAudioModeAsync({
         playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: false,
+        staysActiveInBackground: true,
+        shouldDuckAndroid: true,
       })
 
-      // Use a simple beep sound that loops
-      // Since we don't have a custom alarm file, we'll create a repeating interval
-      // that plays the notification sound
-      const playSound = async () => {
-        try {
-          const { sound } = await Audio.Sound.createAsync(
-            require('../../assets/adaptive-icon.png'), // This will fail, triggering fallback
-            { shouldPlay: true, volume: 1.0 }
-          )
-          await sound.playAsync()
-          setTimeout(() => sound.unloadAsync(), 1000)
-        } catch {
-          // Silently fail - we're using vibration as primary alert
-        }
-      }
-
-      // Play sound every 2 seconds
-      const interval = setInterval(playSound, 2000)
-      soundRef.current = { interval } as any
-      setIsPlaying(true)
+      // Use a valid sound URL. This is a standard alarm beep.
+      // If this URL fails, the vibration will still work.
+      const { sound } = await Audio.Sound.createAsync(
+         { uri: 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg' },
+         { shouldPlay: true, isLooping: true, volume: 1.0 }
+      )
       
-      // Play immediately
-      playSound()
+      soundRef.current = sound
+      setIsPlaying(true)
     } catch (error) {
       console.error('Error playing alarm sound:', error)
       setIsPlaying(false)
     }
   }
 
-
   const stopAlarmSound = async () => {
     try {
       if (soundRef.current) {
-        if ((soundRef.current as any).interval) {
-          clearInterval((soundRef.current as any).interval)
-        } else if ((soundRef.current as any).stopAsync) {
-          await (soundRef.current as any).stopAsync()
-          await (soundRef.current as any).unloadAsync()
-        }
+        await soundRef.current.stopAsync()
+        await soundRef.current.unloadAsync()
         soundRef.current = null
       }
       setIsPlaying(false)
@@ -95,37 +77,38 @@ export default function AlarmScreen({ visible, medicationName, dosage, onDismiss
   return (
     <Modal
       visible={visible}
-      animationType="fade"
+      animationType="slide"
       transparent={false}
-      onRequestClose={handleDismiss}
+      onRequestClose={handleDismiss} // Require explicit action on Android
     >
       <View style={styles.container}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="medical" size={120} color={colors.primary.DEFAULT} />
+        <View style={styles.contentContainer}>
+          <View style={styles.iconContainer}>
+            <View style={styles.pulseRing} />
+            <Ionicons name="notifications-circle" size={140} color={colors.primary.DEFAULT} />
+          </View>
+
+          <Text style={styles.title}>HORA DO REMÉDIO!</Text>
+          
+          <View style={styles.card}>
+            <Text style={styles.label}>Medicamento:</Text>
+            <Text style={styles.medicationName}>{medicationName}</Text>
+            
+            <View style={styles.divider} />
+            
+            <Text style={styles.label}>Dose:</Text>
+            <Text style={styles.dosage}>{dosage}</Text>
+          </View>
+
+          <TouchableOpacity 
+            style={styles.dismissButton}
+            onPress={handleDismiss}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="checkmark-circle-outline" size={32} color="white" style={{ marginRight: 10 }} />
+            <Text style={styles.dismissButtonText}>JÁ TOMEI O REMÉDIO</Text>
+          </TouchableOpacity>
         </View>
-
-        <Text style={styles.title}>Hora do Medicamento!</Text>
-        
-        <View style={styles.infoContainer}>
-          <Text style={styles.medicationName}>{medicationName}</Text>
-          <Text style={styles.dosage}>{dosage}</Text>
-        </View>
-
-        <View style={styles.pulseContainer}>
-          <View style={[styles.pulse, styles.pulse1]} />
-          <View style={[styles.pulse, styles.pulse2]} />
-          <View style={[styles.pulse, styles.pulse3]} />
-        </View>
-
-        <TouchableOpacity 
-          style={styles.dismissButton}
-          onPress={handleDismiss}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.dismissButtonText}>TOMAR MEDICAMENTO</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.hint}>Toque para confirmar que tomou o medicamento</Text>
       </View>
     </Modal>
   )
@@ -135,69 +118,84 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    justifyContent: 'center',
+  },
+  contentContainer: {
+    flex: 1,
+    justifyContent: 'space-evenly', // Distribute space evenly
     alignItems: 'center',
     padding: spacing.xl,
+    paddingBottom: spacing.xl * 2,
   },
   iconContainer: {
-    marginBottom: spacing.xl * 2,
-  },
-  title: {
-    fontSize: fontSize['3xl'],
-    fontWeight: 'bold',
-    color: colors.foreground,
-    marginBottom: spacing.xl,
-    textAlign: 'center',
-  },
-  infoContainer: {
-    backgroundColor: colors.card,
-    padding: spacing.xl,
-    borderRadius: borderRadius.xl,
-    marginBottom: spacing.xl * 2,
-    width: '100%',
-    alignItems: 'center',
-  },
-  medicationName: {
-    fontSize: fontSize['2xl'],
-    fontWeight: 'bold',
-    color: colors.primary.DEFAULT,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  dosage: {
-    fontSize: fontSize.xl,
-    color: colors.muted.foreground,
-    textAlign: 'center',
-  },
-  pulseContainer: {
-    position: 'absolute',
-    top: '30%',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: spacing.md,
   },
-  pulse: {
+  pulseRing: {
     position: 'absolute',
     width: 200,
     height: 200,
     borderRadius: 100,
     backgroundColor: colors.primary.DEFAULT,
-    opacity: 0.3,
+    opacity: 0.15,
   },
-  pulse1: {
-    // Animation would be added via Animated API if needed
+  title: {
+    fontSize: 28, // Hardcoded for larger size
+    fontWeight: '900', // Extra bold
+    color: colors.foreground,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
-  pulse2: {
-    // Animation would be added via Animated API if needed
+  card: {
+    backgroundColor: colors.card,
+    padding: spacing.xl,
+    borderRadius: borderRadius.xl,
+    width: '100%',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary.DEFAULT,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  pulse3: {
-    // Animation would be added via Animated API if needed
+  label: {
+    fontSize: fontSize.lg,
+    color: colors.muted.foreground,
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    fontWeight: '600',
+  },
+  medicationName: {
+    fontSize: 32, // Very large for readability
+    fontWeight: 'bold',
+    color: colors.primary.DEFAULT,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  divider: {
+    height: 1,
+    width: '80%',
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    marginVertical: spacing.md,
+  },
+  dosage: {
+    fontSize: 24,
+    color: colors.foreground,
+    textAlign: 'center',
+    fontWeight: '600',
   },
   dismissButton: {
-    backgroundColor: colors.primary.DEFAULT,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.xl * 2,
-    borderRadius: borderRadius.full,
-    marginBottom: spacing.lg,
+    backgroundColor: '#16a34a', // Green color to indicate positive action
+    paddingVertical: 20,
+    paddingHorizontal: 30,
+    borderRadius: borderRadius.xl,
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -206,13 +204,8 @@ const styles = StyleSheet.create({
   },
   dismissButtonText: {
     color: 'white',
-    fontSize: fontSize.xl,
+    fontSize: 20,
     fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  hint: {
-    fontSize: fontSize.base,
-    color: colors.muted.foreground,
     textAlign: 'center',
   },
 })
