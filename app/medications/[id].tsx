@@ -88,6 +88,7 @@ export default function EditMedicationScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              await cancelMedicationNotifications(id as string)
               await deleteMedication(id as string)
               router.back()
             } catch (e: any) {

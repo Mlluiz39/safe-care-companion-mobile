@@ -3,9 +3,9 @@ import { Platform } from 'react-native'
 
 let handlerInitialized = false
 
-/* ===========================
-   INIT
-=========================== */
+/**
+ * Inicializa handler e canal de notificações
+ */
 export async function initNotifications() {
     if (handlerInitialized) return
 
@@ -27,139 +27,161 @@ export async function initNotifications() {
             await Notifications.setNotificationChannelAsync('default', {
                 name: 'Medicamentos',
                 importance: Notifications.AndroidImportance.MAX,
-                vibrationPattern: [0, 250, 250, 250],
+                vibrationPattern: [0, 500, 200, 500],
                 lightColor: '#FF231F7C',
-                lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+                lockscreenVisibility:
+                    Notifications.AndroidNotificationVisibility.PUBLIC,
                 bypassDnd: true,
+                sound: 'alarm.wav',
             })
         }
 
         handlerInitialized = true
     } catch (error) {
-        console.warn('Failed to load expo-notifications:', error)
+        console.warn('Falha ao inicializar notificações:', error)
     }
 }
 
-/* ===========================
-   PERMISSIONS
-   =========================== */
-export const registerForPushNotificationsAsync = registerForLocalNotifications // Alias for compatibility
+/**
+ * Permissões (local notifications)
+ */
+export const registerForPushNotificationsAsync =
+    registerForLocalNotifications
 
 export async function registerForLocalNotifications() {
     const Notifications = await import('expo-notifications')
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync()
+    const { status: existingStatus } =
+        await Notifications.getPermissionsAsync()
+
     let finalStatus = existingStatus
-    
+
     if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync()
+        const { status } =
+            await Notifications.requestPermissionsAsync()
         finalStatus = status
     }
-    
+
     if (finalStatus !== 'granted') {
-        alert('Permissão para notificações é necessária para o alarme funcionar!')
+        alert(
+            'Permissão para notificações é necessária para os alarmes de medicamentos!'
+        )
     }
 }
 
-/* ===========================
-   HELPERS
-=========================== */
-function createDailyTrigger(time: string): ExpoNotifications.DailyTriggerInput {
-    const [hour, minute] = time.split(':').map(Number)
-
-    return {
-        type: 'daily',
-        hour,
-        minute,
-    } as unknown as ExpoNotifications.DailyTriggerInput
-}
-
-/* ===========================
-   SCHEDULE
-=========================== */
+/**
+ * Agenda notificação diária e retorna o ID REAL do Expo
+ */
 export async function scheduleMedicationNotification(
-    medicationId: string,
     name: string,
     dosage: string,
     time: string
+): Promise<string | null> {
+    try {
+        const Notifications = await import('expo-notifications')
+        const [hour, minute] = time.split(':').map(Number)
+
+        const notificationId =
+            await Notifications.scheduleNotificationAsync({
+                content: {
+                    title: 'Hora do medicamento 💊',
+                    body: `${name} — ${dosage}`,
+                    sound: 'alarm.wav',
+                    priority:
+                        Notifications.AndroidNotificationPriority.MAX,
+                },
+                trigger: {
+                    type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+                    hour,
+                    minute,
+                    repeats: true,
+                },
+            })
+
+        return notificationId
+    } catch (error) {
+        console.error('Erro ao agendar notificação:', error)
+        return null
+    }
+}
+
+/**
+ * Cancela notificações por ID REAL
+ */
+export async function cancelMedicationNotifications(
+    notificationIds: string[]
 ) {
     try {
         const Notifications = await import('expo-notifications')
 
-        await Notifications.scheduleNotificationAsync({
-            identifier: `med-${medicationId}-${time}`,
-            content: {
-                title: 'Hora do medicamento 💊',
-                body: `${name} — ${dosage}`,
-                sound: 'default',
-            },
-            trigger: createDailyTrigger(time),
-        })
-
-        return true
-    } catch (error) {
-        console.error('Erro ao agendar notificação:', error)
-        return false
-    }
-}
-
-
-
-/* ===========================
-   CANCEL
-=========================== */
-export async function cancelMedicationNotifications(medicationId: string) {
-    const Notifications = await import('expo-notifications')
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync()
-
-    for (const n of scheduled) {
-        if (n.identifier?.startsWith(`med-${medicationId}`)) {
-            await Notifications.cancelScheduledNotificationAsync(n.identifier)
+        for (const id of notificationIds) {
+            await Notifications.cancelScheduledNotificationAsync(id)
         }
+    } catch (error) {
+        console.error(
+            'Erro ao cancelar notificações do medicamento:',
+            error
+        )
     }
 }
 
-/* ===========================
-   FULL RESET (opcional)
-=========================== */
+/**
+ * Cancela TODAS as notificações do app (uso administrativo)
+ */
 export async function cancelAllMedicationNotifications() {
-    const Notifications = await import('expo-notifications')
-    await Notifications.cancelAllScheduledNotificationsAsync()
+    try {
+        const Notifications = await import('expo-notifications')
+        await Notifications.cancelAllScheduledNotificationsAsync()
+    } catch (error) {
+        console.error(
+            'Erro ao cancelar todas notificações:',
+            error
+        )
+    }
 }
 
+/**
+ * Agenda notificação única (ex: lembrete pontual)
+ */
 export async function scheduleOneTimeNotification(
-    id: string,
     title: string,
     body: string,
     date: Date
-) {
+): Promise<string | null> {
     try {
         const Notifications = await import('expo-notifications')
 
-        await Notifications.scheduleNotificationAsync({
-            identifier: id,
-            content: {
-                title,
-                body,
-                sound: 'default',
-            },
-            trigger: {
-                type: 'date',
-                date,
-            } as unknown as ExpoNotifications.DateTriggerInput,
-        })
+        const id =
+            await Notifications.scheduleNotificationAsync({
+                content: {
+                    title,
+                    body,
+                    sound: 'default',
+                },
+                trigger: {
+                    date,
+                } as unknown as ExpoNotifications.DateTriggerInput,
+            })
 
-        return true
+        return id
     } catch (error) {
-        console.error('Erro ao agendar notificação única:', error)
-        return false
+        console.error(
+            'Erro ao agendar notificação única:',
+            error
+        )
+        return null
     }
 }
 
+/**
+ * Cancela UMA notificação específica
+ */
 export async function cancelNotification(identifier: string) {
     try {
         const Notifications = await import('expo-notifications')
-        await Notifications.cancelScheduledNotificationAsync(identifier)
+        await Notifications.cancelScheduledNotificationAsync(
+            identifier
+        )
     } catch (error) {
         console.error('Erro ao cancelar notificação:', error)
     }
