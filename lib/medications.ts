@@ -28,7 +28,7 @@ export async function addMedication(med: AddMedicationInput) {
     .from('medications')
     .insert({
       ...med,
-      notification_ids: notificationId ? [notificationId] : [],
+      notification_ids: notificationId ? [notificationId] : null,
     })
     .select()
     .single()
