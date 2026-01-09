@@ -12,22 +12,34 @@ type AddMedicationInput = {
   user_id: string
   start_date: string
   notes?: string
-  time: string // HH:mm
+  time: string // usado apenas para notificação (NÃO vai pro banco)
 }
 
+// Tipo para operações de banco de dados (inclui notification_ids)
+type MedicationDbRecord = Omit<AddMedicationInput, 'time'> & {
+  notification_ids?: string[] | null
+}
+
+/* ───────────────────────── ADD ───────────────────────── */
+
 export async function addMedication(med: AddMedicationInput) {
+  const {
+    time,
+    ...dbMed // remove time antes de salvar
+  } = med
+
   // 1️⃣ Agendar notificação
   const notificationId = await scheduleMedicationNotification(
     med.name,
     med.dosage,
-    med.time
+    time
   )
 
-  // 2️⃣ Salvar medicamento + notification_ids
+  // 2️⃣ Salvar no banco
   const { data, error } = await supabase
     .from('medications')
     .insert({
-      ...med,
+      ...dbMed,
       notification_ids: notificationId ? [notificationId] : null,
     })
     .select()
@@ -36,7 +48,7 @@ export async function addMedication(med: AddMedicationInput) {
   if (error) {
     console.error('❌ ERRO AO INSERIR:', error)
 
-    // rollback da notificação se falhar o banco
+    // rollback da notificação
     if (notificationId) {
       await cancelMedicationNotifications([notificationId])
     }
@@ -48,38 +60,47 @@ export async function addMedication(med: AddMedicationInput) {
   return data
 }
 
+/* ───────────────────────── UPDATE ───────────────────────── */
+
 export async function updateMedication(
   id: string,
-  updates: Partial<AddMedicationInput> & {
-    notification_ids?: string[]
-  }
+  updates: Partial<AddMedicationInput>
 ) {
-  // 1️⃣ Buscar notificações antigas
-  const { data: old } = await supabase
+  const { time, ...rest } = updates
+  const dbUpdates = rest as Partial<MedicationDbRecord>
+
+  // 1️⃣ Buscar dados antigos
+  const { data: old, error: fetchError } = await supabase
     .from('medications')
-    .select('notification_ids')
+    .select('name, dosage, notification_ids')
     .eq('id', id)
     .single()
 
-  // 2️⃣ Se horário mudou, cancelar e reagendar
-  if (updates.time && old?.notification_ids?.length) {
-    await cancelMedicationNotifications(old.notification_ids)
-
-    const newNotificationId = await scheduleMedicationNotification(
-      updates.name ?? '',
-      updates.dosage ?? '',
-      updates.time
-    )
-
-    updates.notification_ids = newNotificationId
-      ? [newNotificationId]
-      : []
+  if (fetchError || !old) {
+    throw fetchError
   }
 
-  // 3️⃣ Atualizar no banco
+  // 2️⃣ Se horário mudou → reagendar
+  if (time) {
+    if (old.notification_ids?.length) {
+      await cancelMedicationNotifications(old.notification_ids)
+    }
+
+    const newNotificationId = await scheduleMedicationNotification(
+      updates.name ?? old.name,
+      updates.dosage ?? old.dosage,
+      time
+    )
+
+    dbUpdates.notification_ids = newNotificationId
+      ? [newNotificationId]
+      : null
+  }
+
+  // 3️⃣ Atualizar banco
   const { data, error } = await supabase
     .from('medications')
-    .update(updates)
+    .update(dbUpdates)
     .eq('id', id)
     .select()
     .single()
@@ -92,8 +113,10 @@ export async function updateMedication(
   return data
 }
 
+/* ───────────────────────── DELETE ───────────────────────── */
+
 export async function deleteMedication(id: string) {
-  // 1️⃣ Buscar IDs de notificação
+  // 1️⃣ Buscar notificações
   const { data } = await supabase
     .from('medications')
     .select('notification_ids')
@@ -105,7 +128,7 @@ export async function deleteMedication(id: string) {
     await cancelMedicationNotifications(data.notification_ids)
   }
 
-  // 3️⃣ Excluir do banco
+  // 3️⃣ Excluir
   const { error } = await supabase
     .from('medications')
     .delete()
