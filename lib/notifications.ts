@@ -78,8 +78,30 @@ export async function scheduleMedicationNotification(
     time: string
 ): Promise<string | null> {
     try {
+        console.log('📅 Agendando notificação:', { name, dosage, time })
+        
         const Notifications = await import('expo-notifications')
+        
+        // Garantir que as notificações estão inicializadas
+        await initNotifications()
+        
+        // Verificar permissões
+        const { status } = await Notifications.getPermissionsAsync()
+        console.log('🔐 Status de permissões:', status)
+        
+        if (status !== 'granted') {
+            console.warn('⚠️ Permissões de notificação não concedidas')
+            // Tentar solicitar permissões
+            const { status: newStatus } = await Notifications.requestPermissionsAsync()
+            if (newStatus !== 'granted') {
+                console.error('❌ Usuário negou permissões de notificação')
+                return null
+            }
+        }
+        
         const [hour, minute] = time.split(':').map(Number)
+        
+        console.log('⏰ Horário parseado:', { hour, minute })
 
         const notificationId =
             await Notifications.scheduleNotificationAsync({
@@ -98,9 +120,10 @@ export async function scheduleMedicationNotification(
                 },
             })
 
+        console.log('✅ Notificação agendada com ID:', notificationId)
         return notificationId
     } catch (error) {
-        console.error('Erro ao agendar notificação:', error)
+        console.error('❌ Erro ao agendar notificação:', error)
         return null
     }
 }

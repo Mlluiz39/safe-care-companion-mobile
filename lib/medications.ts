@@ -35,6 +35,8 @@ export async function addMedication(med: AddMedicationInput) {
     time
   )
 
+  console.log('🔔 Notification ID recebido:', notificationId)
+
   // 2️⃣ Salvar no banco
   const { data, error } = await supabase
     .from('medications')
